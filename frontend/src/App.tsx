@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from "react";
+import React, { useRef, useState, useCallback, useEffect } from "react";
 import {
   ConfigProvider,
   theme,
@@ -67,6 +67,27 @@ const N64_CONTROL_MAP: { [key: string]: number } = {
 const MAX_SERVER_LOGS = 200;
 const WEBSOCKET_URL = "ws://localhost:3033/ws";
 
+// Define props for the memoized emulator wrapper
+interface MemoizedEmulatorDisplayProps {
+  emulatorRef: React.RefObject<N64EmulatorRef | null>;
+  onScreenshot: (base64Data: string, commandId?: string) => void;
+}
+
+// Create the memoized wrapper component for N64Emulator
+const MemoizedEmulatorDisplay = React.memo<MemoizedEmulatorDisplayProps>(
+  ({ emulatorRef, onScreenshot }) => {
+    // This console.log will help us verify if this component re-renders unnecessarily.
+    // Ideally, it should log very infrequently after initial mount.
+    console.log("MemoizedEmulatorDisplay rendering/re-rendering");
+    return (
+      <div className="absolute top-[-100px] left-0 w-full h-full z-0">
+        <N64Emulator ref={emulatorRef} onScreenshot={onScreenshot} />
+      </div>
+    );
+  }
+);
+MemoizedEmulatorDisplay.displayName = "MemoizedEmulatorDisplay"; // For better debugging in React DevTools
+
 function App() {
   const emulatorRef = useRef<N64EmulatorRef>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -95,10 +116,23 @@ function App() {
   );
 
   const sendMessageToServer = useCallback(
-    (messageObject: object) => {
+    (messageObject: any) => {
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         const messageString = JSON.stringify(messageObject);
-        addServerLog(`[TX] Client: ${messageString}`, "client_tx", "DEBUG");
+
+        if (
+          messageObject.type === "SCREENSHOT_RESPONSE" &&
+          messageObject.commandId
+        ) {
+          addServerLog(
+            `[TX] Client: Sent Screenshot 📸 for commandId: ${messageObject.commandId}`,
+            "client_tx",
+            "DEBUG"
+          );
+        } else {
+          addServerLog(`[TX] Client: ${messageString}`, "client_tx", "DEBUG");
+        }
+
         wsRef.current.send(messageString);
       } else {
         const errorMsg = `[TX] Client (Error): Failed to send - WebSocket not open. Message: ${JSON.stringify(
@@ -387,7 +421,6 @@ function App() {
   );
 
   const showDrawer = useCallback(() => setDrawerVisible(true), []);
-  const onCloseDrawer = useCallback(() => setDrawerVisible(false), []);
 
   return (
     <ConfigProvider theme={{ algorithm: darkAlgorithm }}>
@@ -422,12 +455,10 @@ function App() {
           )}
         </div>
         <ServerLogsDisplay logs={serverLogs} />
-        <div className="absolute top-[-100px] left-0 w-full h-full z-0">
-          <N64Emulator
-            ref={emulatorRef}
-            onScreenshot={handleEmulatorScreenshot}
-          />
-        </div>
+        <MemoizedEmulatorDisplay
+          emulatorRef={emulatorRef}
+          onScreenshot={handleEmulatorScreenshot}
+        />
         <div className="absolute bottom-0 left-0 w-[100%] h-[30%] z-1">
           <Console3D />
         </div>
@@ -440,6 +471,7 @@ function App() {
             Screenshot
           </Button>
           <N64Controller onClickButton={handleN64ControllerClick} />
+
           <Button
             type="primary"
             icon={<PlayCircleOutlined />}
@@ -455,12 +487,9 @@ function App() {
             Stop AI
           </Button>
         </div>
-        <div className="z-0 text-sm text-gray-400 absolute bottom-4 right-4 flex items-end justify-end space-x-4 flex-col z-20 pr-4 pb-1 md:pr-2/3">
-          <div
-            style={{
-              paddingRight: serverLogs.length > 0 ? "calc(33.33% + 1rem)" : "0",
-            }}
-          >
+
+        <div className="z-0 text-sm text-gray-400 absolute bottom-4 right-4 flex items-end justify-end gap-2">
+          <div className="flex items-end justify-end gap-4">
             <p>
               Built on top of{" "}
               <a
@@ -480,7 +509,7 @@ function App() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Ethanboor
+                @ethanboor
               </a>
             </p>
           </div>

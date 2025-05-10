@@ -1,4 +1,9 @@
 import { randomUUID } from 'crypto';
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+const MODEL_NAME = "gemini-2.5-pro";
 
 export class Player {
     public readonly name: string;
@@ -57,7 +62,7 @@ export class Player {
             const screenshotData = await this.requestScreenshotInternal();
             console.log(`Player '${this.name}': Received screenshot (length: ${screenshotData.length})`);
 
-            const mockAction = { type: "PRESS_BUTTON", payload: { button: "A", player: 0, duration: 100 } }; // Example action
+            const mockAction = { type: "PRESS_BUTTON", payload: { button: "START", player: 0, duration: 100 } }; // Example action
             console.log(`Player '${this.name}': Decided action:`, mockAction);
 
             this.sendCommandInternal(mockAction);

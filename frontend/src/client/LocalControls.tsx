@@ -3,7 +3,7 @@
 
 import React, { useState } from "react";
 import { Drawer, Button as AntButton } from "antd"; // Re-introducing AntButton for the trigger
-import { PiControl } from "react-icons/pi";
+import { PiControl, PiJoystick } from "react-icons/pi";
 
 type N64ButtonKey =
   | "L"
@@ -102,9 +102,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
             >
               ◀
             </div>
-            <div className="w-10 h-10 rounded-full shadow-inner">
-              {" "}
-            </div>{" "}
+            <div className="w-10 h-10 rounded-full shadow-inner"> </div>{" "}
             {/* D-pad center appearance */}
             <div
               role="button"
@@ -249,12 +247,7 @@ const N64Controller: React.FC<LocalControlsProps> = ({ onClickButton }) => {
   return (
     <>
       <div className="p-4 flex justify-center">
-        <AntButton
-          type="text"
-          onClick={showDrawer}
-          className="bg-sky-500 hover:bg-sky-600"
-          icon={<PiControl />}
-        >
+        <AntButton onClick={showDrawer} icon={<PiJoystick />}>
           Joypad
         </AntButton>
       </div>
@@ -267,7 +260,6 @@ const N64Controller: React.FC<LocalControlsProps> = ({ onClickButton }) => {
         open={isDrawerOpen}
         mask={false}
         height={480} // Adjusted height
-        bodyStyle={{ padding: "20px 10px" }} // Reduced padding for the controller visuals
         getContainer={false} // Optional: to render drawer inline if needed, usually not for bottom drawers
       >
         <N64ControllerLayout onClickButton={onClickButton} />
