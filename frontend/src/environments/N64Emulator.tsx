@@ -35,38 +35,38 @@ const N64Emulator = forwardRef<N64EmulatorRef, {}>((props, ref) => {
     };
   }, []);
 
-  useImperativeHandle(ref, () => ({
-    triggerScreenshot: () => {
-      if (!isGameStarted) {
-        console.warn("Cannot take screenshot: Game has not started yet.");
-        return;
-      }
+  useImperativeHandle(
+    ref,
+    () => {
+      const MIN_SCREENSHOT_SIZE_BYTES = 36 * 1024; // 36KB
+      const MAX_RETRIES = 10; // Total attempts
+      const RETRY_DELAY_MS = 500; // Delay between retries
 
-      const canvas = document.querySelector(".ejs_canvas") as HTMLCanvasElement;
-      if (canvas) {
-        requestAnimationFrame(() => {
-          // It might even be beneficial to wait for two frames for WebGL contexts
-          // requestAnimationFrame(() => {
-          try {
-            const dataURL = canvas.toDataURL("image/png");
-            console.log("Screenshot taken from canvas. Data URL:", dataURL);
+      // Helper function to get Data URL file size in bytes
+      const getDataUrlFileSize = (dataURL: string): number => {
+        const prefix = "data:image/png;base64,";
+        if (!dataURL.startsWith(prefix)) {
+          console.warn(
+            "DataURL does not have expected image/png base64 prefix for size calculation."
+          );
+          return 0;
+        }
+        const base64Data = dataURL.substring(prefix.length);
+        try {
+          // The length of the decoded base64 string is the number of bytes of the binary data.
+          return window.atob(base64Data).length;
+        } catch (e) {
+          console.error(
+            "Failed to decode base64 string for size calculation:",
+            e
+          );
+          return 0;
+        }
+      };
 
-            const link = document.createElement("a");
-            link.download = "screenshot.png";
-            link.href = dataURL;
-            document.body.appendChild(link); // Required for Firefox
-            link.click();
-            document.body.removeChild(link);
-          } catch (error) {
-            console.error("Error taking screenshot from canvas:", error);
-          }
-          // });
-        });
-      } else {
-        console.warn(
-          "ejs_canvas not found. Attempting fallback screenshot methods."
-        );
-        // Fallback to existing methods if canvas is not found
+      // Helper function to handle fallback screenshot mechanisms
+      const handleFallbackScreenshot = () => {
+        console.warn("Attempting fallback screenshot methods.");
         if (
           window.EJS_emulator &&
           typeof window.EJS_emulator.screenshot === "function"
@@ -94,9 +94,91 @@ const N64Emulator = forwardRef<N64EmulatorRef, {}>((props, ref) => {
             );
           }
         }
-      }
+      };
+
+      return {
+        triggerScreenshot: () => {
+          if (!isGameStarted) {
+            console.warn("Cannot take screenshot: Game has not started yet.");
+            return;
+          }
+
+          const canvas = document.querySelector(
+            ".ejs_canvas"
+          ) as HTMLCanvasElement;
+          if (canvas) {
+            let currentAttempt = 0; // 0-indexed
+
+            const attemptScreenshotCapture = () => {
+              // Double requestAnimationFrame for rendering stability
+              requestAnimationFrame(() => {
+                requestAnimationFrame(async () => {
+                  try {
+                    const dataURL = canvas.toDataURL("image/png");
+                    const fileSize = getDataUrlFileSize(dataURL);
+
+                    console.log(
+                      `Screenshot attempt ${
+                        currentAttempt + 1
+                      }/${MAX_RETRIES}. Size: ${fileSize} bytes.`
+                    );
+
+                    let proceedWithDownload = false;
+
+                    if (fileSize > MIN_SCREENSHOT_SIZE_BYTES) {
+                      console.log("Screenshot size is sufficient.");
+                      proceedWithDownload = true;
+                    } else if (currentAttempt < MAX_RETRIES - 1) {
+                      // Size is too small, and retries are left
+                      currentAttempt++;
+                      console.warn(
+                        `Screenshot size ${fileSize} bytes is <= ${MIN_SCREENSHOT_SIZE_BYTES} bytes. Retrying in ${RETRY_DELAY_MS}ms... (Attempt ${
+                          currentAttempt + 1
+                        }/${MAX_RETRIES})`
+                      );
+                      setTimeout(attemptScreenshotCapture, RETRY_DELAY_MS);
+                    } else {
+                      // Size is too small, and no retries left
+                      console.warn(
+                        `Screenshot size ${fileSize} bytes is <= ${MIN_SCREENSHOT_SIZE_BYTES} bytes after ${MAX_RETRIES} attempts. Proceeding with this screenshot.`
+                      );
+                      proceedWithDownload = true;
+                    }
+
+                    if (proceedWithDownload) {
+                      const link = document.createElement("a");
+                      link.download = "screenshot.png";
+                      link.href = dataURL;
+                      document.body.appendChild(link); // Required for Firefox
+                      link.click();
+                      document.body.removeChild(link);
+                      console.log(
+                        `Screenshot download initiated. Final size: ${fileSize} bytes.`
+                      );
+                    }
+                  } catch (error) {
+                    console.error(
+                      `Error during screenshot canvas capture (attempt ${
+                        currentAttempt + 1
+                      }):`,
+                      error
+                    );
+                    handleFallbackScreenshot();
+                  }
+                });
+              });
+            };
+
+            attemptScreenshotCapture(); // Start the first attempt
+          } else {
+            console.warn("ejs_canvas not found.");
+            handleFallbackScreenshot();
+          }
+        },
+      };
     },
-  }));
+    [isGameStarted]
+  ); // Added isGameStarted to dependency array
 
   const rom =
     "https://rpuqlzpbhnfjvmauvgiz.supabase.co/storage/v1/object/public/roms//The%20Legend%20of%20Zelda%20-%20Ocarina%20of%20Time.z64";

@@ -31,6 +31,48 @@ function App() {
     }
   };
 
+  const handleFakeEnterPress = () => {
+    const gameElement = document.getElementById("game") as HTMLElement;
+    const targetElement = gameElement || window; // Prefer game element, fallback to window
+
+    const event = new KeyboardEvent("keydown", {
+      key: "Enter",
+      code: "Enter",
+      keyCode: 13,
+      which: 13,
+      bubbles: true,
+      cancelable: true,
+    });
+
+    targetElement.dispatchEvent(event);
+
+    if (gameElement) {
+      // Attempt to focus the game element as well, which might be necessary for some emulators
+      if (typeof gameElement.focus === 'function') {
+        gameElement.focus();
+      }
+      // Dispatch keyup as well, as some systems require both
+      const eventUp = new KeyboardEvent("keyup", {
+        key: "Enter",
+        code: "Enter",
+        keyCode: 13,
+        which: 13,
+        bubbles: true,
+        cancelable: true,
+      });
+      targetElement.dispatchEvent(eventUp);
+      notification.info({
+        message: "Enter Key Sent to #game",
+        description: "The Enter key press has been simulated on the #game element.",
+      });
+    } else {
+      notification.warning({
+        message: "Enter Key Sent to Window (Fallback)",
+        description: "#game element not found. Enter key press simulated on the window.",
+      });
+    }
+  };
+
   return (
     <ConfigProvider
       theme={{
@@ -57,6 +99,13 @@ function App() {
             style={{ backgroundColor: "#007AFF" }}
           >
             Screenshot
+          </Button>
+          <Button
+            type="default"
+            onClick={handleFakeEnterPress}
+            style={{ marginLeft: "8px" }}
+          >
+            Fake Enter Press
           </Button>
         </div>
       </div>
