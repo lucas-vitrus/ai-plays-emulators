@@ -1,152 +1,136 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import { Player } from "./player";
+import type { ServerWebSocket } from "bun"; // Use ServerWebSocket directly
 
-// const server = Bun.serve({
-//   port: 3001, // You can change the port as needed
-//   fetch(req) {
-//     return new Response("Hello from the backend!");
-//   },
-// });
+// Define a type for the data associated with each WebSocket connection by Bun
+interface WebSocketContext {
+  // We can add connection-specific data here later if needed, e.g., playerId
+}
 
-// console.log(`Backend server listening on http://localhost:${server.port}`);
+const activePlayers = new Map<ServerWebSocket<WebSocketContext>, Player>();
 
-import { Peer, DataConnection } from 'peerjs';
-
-const FIXED_TARGET_PEER_ID = "YOUR_FIXED_PEER_ID_HERE"; // <--- REPLACE THIS WITH THE ACTUAL PEER ID
-
-const peer = new Peer();
-const connections: Record<string, DataConnection> = {};
-
-function handleConnection(conn: DataConnection) {
-  console.log(`Connection established with ${conn.peer}`);
-  conn.on('data', (raw: any) => {
-    try {
-      const msg = JSON.parse(raw);
-      if (msg.type === 'image') {
-        console.log(`📷 [${conn.peer}] image, ${msg.data.length} chars`);
-      } else if (msg.type === 'json') {
-        console.log(`💬 [${conn.peer}]`, msg.payload);
-      }
-    } catch (error) {
-      console.error(`Error processing data from ${conn.peer}:`, error);
+Bun.serve({
+  fetch(req, server) {
+    const url = new URL(req.url);
+    if (url.pathname === "/ws") {
+      const success = server.upgrade(req, {
+        data: {} as WebSocketContext, // Ensure ws.data is typed
+      });
+      return success
+        ? undefined
+        : new Response("WebSocket upgrade error", { status: 400 });
     }
-  });
-  conn.on('close', () => {
-    console.log(`Connection closed with ${conn.peer}`);
-    delete connections[conn.peer];
-  });
-  conn.on('error', (err) => {
-    console.error(`Connection error with ${conn.peer}:`, err);
-    delete connections[conn.peer];
-  });
-  connections[conn.peer] = conn;
-}
+    return new Response("Not found", { status: 404 });
+  },
+  websocket: {
+    message(ws, message) {
+      console.log(`Received message: ${message}`);
+      let parsedMessage: any;
+      try {
+        parsedMessage = JSON.parse(message.toString());
+      } catch (error) {
+        console.error("Failed to parse message as JSON:", message.toString());
+        ws.send(JSON.stringify({ type: "ERROR", payload: "Invalid message format." }));
+        return;
+      }
 
-peer.on('open', (id) => {
-  console.log(`Your PeerJS ID: ${id}`);
-  if (FIXED_TARGET_PEER_ID && FIXED_TARGET_PEER_ID !== "YOUR_FIXED_PEER_ID_HERE") {
-    console.log(`Attempting to connect to fixed peer: ${FIXED_TARGET_PEER_ID}`);
-    connectToPeer(FIXED_TARGET_PEER_ID);
-  } else {
-    console.log("FIXED_TARGET_PEER_ID is not set or is the placeholder. Waiting for incoming connections.");
-  }
+      const typedWs = ws as ServerWebSocket<WebSocketContext>;
+      const player = activePlayers.get(typedWs);
+
+      switch (parsedMessage.type) {
+        case "BEGIN_PLAY":
+          if (!player) {
+            console.log("BEGIN_PLAY received. Creating new player.");
+            const playerName = "Gemini"; // Define player name
+            const newPlayer = new Player(
+              playerName, // Pass name to constructor
+              // requestScreenshotFn
+              (commandId: string) => {
+                if (ws.readyState === WebSocket.OPEN) {
+                  ws.send(JSON.stringify({ type: "REQUEST_SCREENSHOT", commandId }));
+                  console.log(`Server: Sent REQUEST_SCREENSHOT (id: ${commandId}) to player '${playerName}'`);
+                } else {
+                  console.warn(`WS not open for REQUEST_SCREENSHOT to player '${playerName}'`);
+                }
+              },
+              // sendCommandFn
+              (action: any) => {
+                if (ws.readyState === WebSocket.OPEN) {
+                  ws.send(JSON.stringify(action));
+                  console.log(`Server: Sent command to player '${playerName}':`, action);
+                } else {
+                  console.warn(`WS not open for command to player '${playerName}'`);
+                }
+              }
+            );
+            activePlayers.set(typedWs, newPlayer);
+            newPlayer.start(); // Player starts its internal loop
+
+            // Inform frontend that player has started and its name
+            ws.send(JSON.stringify({ 
+              type: "PLAYER_INIT", 
+              payload: { 
+                playerName: newPlayer.getName(), 
+                message: `Player '${newPlayer.getName()}' has started.` 
+              }
+            }));
+            // Also send the older general info message for compatibility or general logging
+            // ws.send(JSON.stringify({ type: "INFO", payload: "Player started." }));
+          } else {
+            console.log("Player already active for this connection.");
+            ws.send(JSON.stringify({ type: "WARN", payload: "Player already active." }));
+          }
+          break;
+        case "END_PLAY":
+          if (player) {
+            const playerName = player.getName();
+            console.log(`END_PLAY received. Stopping player '${playerName}'.`);
+            player.stop();
+            activePlayers.delete(typedWs);
+            ws.send(JSON.stringify({ type: "INFO", payload: `Player '${playerName}' stopped.` }));
+          } else {
+            console.log("No active player to stop for this connection.");
+            ws.send(JSON.stringify({ type: "WARN", payload: "No active player to stop." }));
+          }
+          break;
+        case "SCREENSHOT_RESPONSE":
+          if (player) {
+            if (parsedMessage.commandId && typeof parsedMessage.data === 'string') {
+              console.log(`SCREENSHOT_RESPONSE for commandId: ${parsedMessage.commandId}`);
+              player.handleScreenshotResponse(parsedMessage.commandId, parsedMessage.data);
+            } else {
+              console.warn("SCREENSHOT_RESPONSE missing commandId or data string:", parsedMessage);
+              ws.send(JSON.stringify({ type: "ERROR", payload: "SCREENSHOT_RESPONSE missing commandId or data string" }));
+            }
+          } else {
+            console.warn(`SCREENSHOT_RESPONSE for unknown player (commandId: ${parsedMessage.commandId})`);
+            // Optionally, inform client if necessary, though usually screenshot responses are tied to active players
+          }
+          break;
+        default:
+          console.log(`Unknown message type: ${parsedMessage.type}`);
+          ws.send(JSON.stringify({ type: "WARN", payload: `Unknown message type: ${parsedMessage.type}` }));
+          break;
+      }
+    },
+    open(ws) {
+      console.log("WebSocket connection opened");
+      ws.send(JSON.stringify({ type: "INFO", payload: "Connection established." }));
+    },
+    close(ws, code, reason) {
+      console.log(`WebSocket connection closed: ${code} - ${reason}`);
+      const typedWs = ws as ServerWebSocket<WebSocketContext>;
+      const player = activePlayers.get(typedWs);
+      if (player) {
+        console.log("Stopping active player due to WebSocket close.");
+        player.stop();
+        activePlayers.delete(typedWs);
+      }
+    },
+    drain(ws) {
+      console.log("WebSocket is ready for more data.");
+    },
+  },
+  port: 3033,
 });
 
-peer.on('connection', (conn) => {
-  console.log(`Incoming connection from ${conn.peer}`);
-  handleConnection(conn);
-});
-
-peer.on('error', (err) => {
-  console.error('PeerJS error:', err);
-  // You might want to add more robust error handling or reconnection logic here
-  if (err.type === 'peer-unavailable') {
-    console.log(`Peer ${FIXED_TARGET_PEER_ID} is unavailable. Will retry connection shortly.`);
-    // Simple retry mechanism, could be made more sophisticated
-    setTimeout(() => {
-      if (FIXED_TARGET_PEER_ID && connections[FIXED_TARGET_PEER_ID] === undefined) {
-        console.log(`Retrying connection to ${FIXED_TARGET_PEER_ID}...`);
-        connectToPeer(FIXED_TARGET_PEER_ID);
-      }
-    }, 5000); // Retry after 5 seconds
-  }
-});
-
-function connectToPeer(targetPeerId: string) {
-  if (connections[targetPeerId]) {
-    console.log(`Already connected or attempting to connect to ${targetPeerId}`);
-    return;
-  }
-
-  console.log(`Attempting to dial ${targetPeerId}`);
-  const conn = peer.connect(targetPeerId);
-
-  if (conn) {
-    conn.on('open', () => {
-      console.log(`Successfully connected to ${targetPeerId} via connectToPeer.`);
-      handleConnection(conn);
-    });
-    // Error and close handlers are set within handleConnection if connection is successful
-    // Or set them here if 'open' is not emitted
-    conn.on('error', (err) => {
-      console.error(`Failed to connect to ${targetPeerId} within connectToPeer:`, err);
-      delete connections[targetPeerId]; // Ensure cleanup if connection fails
-    });
-  } else {
-    console.error(`Failed to initiate connection to peer: ${targetPeerId}. 'peer.connect' returned undefined.`);
-  }
-}
-
-// --- Functions to send messages ---
-
-export function sendJsonToAll(payload: any) {
-  if (Object.keys(connections).length === 0) {
-    console.log("No active connections to send JSON to.");
-    return;
-  }
-  try {
-    const msg = JSON.stringify({ type: 'json', id: Date.now().toString(), payload });
-    Object.values(connections).forEach(c => {
-      if (c && c.open) {
-        c.send(msg);
-      }
-    });
-    console.log('→ JSON sent to all connected peers');
-  } catch (error) {
-    console.log('Invalid JSON payload:', error);
-  }
-}
-
-export function sendImageToAll(filePath: string) {
-  if (Object.keys(connections).length === 0) {
-    console.log("No active connections to send image to.");
-    return;
-  }
-  try {
-    const abs = path.resolve(filePath);
-    const data = fs.readFileSync(abs, { encoding: 'base64' });
-    const msg = JSON.stringify({ type: 'image', id: Date.now().toString(), data: `data:image/${path.extname(abs).slice(1)};base64,${data}` });
-    Object.values(connections).forEach(c => {
-      if (c && c.open) {
-        c.send(msg);
-      }
-    });
-    console.log(`→ Image sent to all connected peers (${filePath})`);
-  } catch (e: any) {
-    console.log('Error reading or sending file:', e.message);
-  }
-}
-
-// Example usage (optional, can be removed or called from elsewhere):
-// setTimeout(() => {
-//   if (FIXED_TARGET_PEER_ID && FIXED_TARGET_PEER_ID !== "YOUR_FIXED_PEER_ID_HERE") {
-//     sendJsonToAll({ greeting: "Hello from the simplified client!" });
-//   }
-// }, 10000); // Send a test message 10 seconds after start, if connected
-
-// To keep the process running, especially if only acting as a server or waiting for connections
-// console.log("PeerJS client running. Waiting for connections or messages...");
-// process.stdin.resume(); // or use another method to keep alive if needed in your environment
-
-// Note: The Bun server part is kept as is.
-// The readline import and related CLI code (prompt function, rl.createInterface) have been removed.
+console.log("Bun WebSocket server listening on port 3033");

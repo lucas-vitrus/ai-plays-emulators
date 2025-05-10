@@ -8,12 +8,17 @@
   },
   "private": true,
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "^1.2.12",
+    "@types/express": "^5.0.1"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "peerjs": "^1.5.4"
+    "express": "^5.1.0",
+    "gun": "^0.2020.1240",
+    "peerjs": "^1.5.4",
+    "peerjs-on-node": "^1.0.2",
+    "wrtc": "^0.4.7"
   }
 }
