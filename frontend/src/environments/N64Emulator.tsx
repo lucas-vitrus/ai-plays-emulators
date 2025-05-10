@@ -186,7 +186,11 @@ const N64Emulator = forwardRef<N64EmulatorRef, {}>((props, ref) => {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center">
       <div
-        className="w-fit h-fit border rounded-lg overflow-hidden shadow-lg"
+        className="w-fit h-fit rounded-lg overflow-hidden"
+        style={{
+          border: "1px solid #000",
+          boxShadow: "0 20px 30px 0px rgba(0, 0, 0, 0.33)",
+        }}
         id="emulator-component"
       >
         <EmulatorJS

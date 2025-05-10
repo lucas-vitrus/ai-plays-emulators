@@ -1,22 +1,25 @@
-import React, { useRef } from "react";
-import { ConfigProvider, theme, Button, notification, Input } from "antd";
+import { useRef, useState } from "react";
+import {
+  ConfigProvider,
+  theme,
+  Button,
+  notification,
+  Input,
+  Drawer,
+} from "antd";
+import { MenuOutlined } from "@ant-design/icons";
 import N64Emulator from "./environments/N64Emulator";
 import type { N64EmulatorRef } from "./environments/N64Emulator";
 import ShowCursor from "./components/ShowCursor";
-
-// The global Window interface for EJS_emulator is now in N64Emulator.tsx
-// declare global {
-//   interface Window {
-//     EJS_emulator?: {
-//       screenshot: () => void;
-//     };
-//   }
-// }
+import Console3D from "./components/Console3D";
+import RemoteController from "./client/Connection";
+import { PiHamburgerBold } from "react-icons/pi";
 
 const { darkAlgorithm } = theme;
 
 function App() {
   const emulatorRef = useRef<N64EmulatorRef>(null);
+  const [drawerVisible, setDrawerVisible] = useState(false);
 
   const handleScreenshot = async () => {
     if (emulatorRef.current) {
@@ -31,57 +34,10 @@ function App() {
     }
   };
 
-  const handleFakeEnterPress = () => {
-    const gameElement = document.getElementById("game") as HTMLElement;
-    const targetElement = gameElement || window; // Prefer game element, fallback to window
-
-    const event = new KeyboardEvent("keydown", {
-      key: "Enter",
-      code: "Enter",
-      keyCode: 13,
-      which: 13,
-      bubbles: true,
-      cancelable: true,
-    });
-
-    targetElement.dispatchEvent(event);
-
-    if (gameElement) {
-      // Attempt to focus the game element as well, which might be necessary for some emulators
-      if (typeof gameElement.focus === "function") {
-        gameElement.focus();
-      }
-      // Dispatch keyup as well, as some systems require both
-      const eventUp = new KeyboardEvent("keyup", {
-        key: "Enter",
-        code: "Enter",
-        keyCode: 13,
-        which: 13,
-        bubbles: true,
-        cancelable: true,
-      });
-      targetElement.dispatchEvent(eventUp);
-      notification.info({
-        message: "Enter Key Sent to #game",
-        description:
-          "The Enter key press has been simulated on the #game element.",
-      });
-    } else {
-      notification.warning({
-        message: "Enter Key Sent to Window (Fallback)",
-        description:
-          "#game element not found. Enter key press simulated on the window.",
-      });
-    }
-  };
-
   const fakeKey = (key: string) => {
     console.log("emulatorjs", (window as any).EJS_emulator);
 
-    console.log(
-      "emulatorjs1",
-      (window as any).EJS_emulator.gameManager
-    );
+    console.log("emulatorjs1", (window as any).EJS_emulator.gameManager);
 
     (window as any).EJS_emulator.gameManager.functions.simulateInput(0, 3, 1);
     setTimeout(() => {
@@ -90,6 +46,14 @@ function App() {
     // (window as any).EJS_emulator.gameManager.functions.restart();
 
     // (window as any).EJS_emulator.pause();
+  };
+
+  const showDrawer = () => {
+    setDrawerVisible(true);
+  };
+
+  const onCloseDrawer = () => {
+    setDrawerVisible(false);
   };
 
   return (
@@ -101,15 +65,53 @@ function App() {
       <div
         style={{
           padding: "0px",
-          backgroundColor: "#211221",
+          backgroundColor: "#211293",
           color: "white",
           height: "100vh",
           width: "100vw",
           position: "relative",
         }}
       >
+        <Button
+          type="text"
+          className="opacity-30 hover:opacity-100"
+          icon={<MenuOutlined style={{ color: "white", fontSize: "24px" }} />}
+          onClick={showDrawer}
+          style={{
+            position: "absolute",
+            top: "20px",
+            left: "20px",
+            zIndex: 10,
+            color: "white",
+          }}
+        />
         <ShowCursor label="Human" hideCursor={true} />
-        <N64Emulator ref={emulatorRef} />
+        <div className="absolute top-6 left-0 w-full flex justify-center items-center">
+          {/* <h1 className="text-white text-4xl w-full flex justify-center items-center">
+            AI Plays Nintendo 64 (<strong>3D</strong>)
+          </h1> */}
+        </div>
+        <div className="absolute top-[-100px] left-0 w-full h-full z-0">
+          <N64Emulator ref={emulatorRef} />
+        </div>
+        <div className="absolute bottom-0 left-0 w-[100%] h-[30%] z-2">
+          <Console3D />
+        </div>
+        <Drawer
+          title="Controller"
+          placement="left"
+          onClose={onCloseDrawer}
+          open={drawerVisible}
+          bodyStyle={{ padding: 0 }}
+          headerStyle={{
+            backgroundColor: "#1f1f1f",
+            borderBottom: "1px solid #303030",
+          }}
+        >
+          <div className="w-full h-full z-3">
+            <RemoteController />
+          </div>
+        </Drawer>
         <div className="absolute bottom-4 left-4 flex items-center space-x-4">
           <p className="text-sm text-gray-400">aiN64</p>
           <Button
@@ -119,17 +121,35 @@ function App() {
           >
             Screenshot
           </Button>
-          <Button
-            type="default"
-            onClick={handleFakeEnterPress}
-            style={{ marginLeft: "8px" }}
-          >
-            Fake Enter Press
-          </Button>
           <Button type="default" onClick={() => fakeKey("Enter")}>
-            Fake Enter Key1
+            Press Enter
           </Button>
           <Input id="in" />
+        </div>
+
+        <div className="text-sm text-gray-400 absolute bottom-4 right-4 flex items-end justify-endspace-x-4 flex-col">
+          <p>
+            Built on top of{" "}
+            <a
+              className="text-white"
+              href="https://sketchfab.com/3d-models/nintendo-64-816d53eca00e4f3192a8d23f62388472#:~:text=3D%20Model-,Ethanboor,-FOLLOW"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              EmulatorJS
+            </a>
+          </p>
+          <p>
+            Nintendo 64 Model from{" "}
+            <a
+              className="text-white"
+              href="https://sketchfab.com/3d-models/nintendo-64-816d53eca00e4f3192a8d23f62388472#:~:text=3D%20Model-,Ethanboor,-FOLLOW"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Ethanboor
+            </a>
+          </p>
         </div>
       </div>
     </ConfigProvider>
