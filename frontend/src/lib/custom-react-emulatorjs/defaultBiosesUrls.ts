@@ -1,4 +1,4 @@
-import { BiosesUrls } from "./types"
+import type { BiosesUrls } from "./types"
 
 export const defaultBiosesUrls: BiosesUrls = {
   "panafz1.bin":

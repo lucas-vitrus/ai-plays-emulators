@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { buildEmulator, type EmulatorArtifacts } from "./buildEmulator";
+import { buildEmulator } from "./buildEmulator";
 import type { Settings } from "./types";
 import { defaultPathToData } from "./defaultPathToData";
 import { defaultSize } from "./defaultSize";
@@ -16,7 +16,7 @@ export const EmulatorJS: React.FunctionComponent<Props> = (props) => {
     if (!emulatorRootRef.current) return;
 
     const currentEmulatorRoot = emulatorRootRef.current; // Capture for cleanup safety
-    console.log("currentEmulatorRoot", currentEmulatorRoot);
+
     // 1. Set up global EJS variables on the main window object
     const activeGlobals: Set<string> = new Set<string>();
     const setGlobal = (key: string, value: unknown) => {
@@ -93,8 +93,6 @@ export const EmulatorJS: React.FunctionComponent<Props> = (props) => {
       style={{
         width: `${width}px`,
         height: `${height}px`,
-        border: "0", // Replicates iframe's border:0 style
-        // Consider adding margin: 0, padding: 0 if needed for layout consistency
       }}
     >
       {/* Emulator content will be dynamically inserted here by the useEffect hook */}

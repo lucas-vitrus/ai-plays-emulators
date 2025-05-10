@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { ConfigProvider, theme, Button, notification } from "antd";
+import { ConfigProvider, theme, Button, notification, Input } from "antd";
 import N64Emulator from "./environments/N64Emulator";
 import type { N64EmulatorRef } from "./environments/N64Emulator";
 import ShowCursor from "./components/ShowCursor";
@@ -48,7 +48,7 @@ function App() {
 
     if (gameElement) {
       // Attempt to focus the game element as well, which might be necessary for some emulators
-      if (typeof gameElement.focus === 'function') {
+      if (typeof gameElement.focus === "function") {
         gameElement.focus();
       }
       // Dispatch keyup as well, as some systems require both
@@ -63,14 +63,33 @@ function App() {
       targetElement.dispatchEvent(eventUp);
       notification.info({
         message: "Enter Key Sent to #game",
-        description: "The Enter key press has been simulated on the #game element.",
+        description:
+          "The Enter key press has been simulated on the #game element.",
       });
     } else {
       notification.warning({
         message: "Enter Key Sent to Window (Fallback)",
-        description: "#game element not found. Enter key press simulated on the window.",
+        description:
+          "#game element not found. Enter key press simulated on the window.",
       });
     }
+  };
+
+  const fakeKey = (key: string) => {
+    console.log("emulatorjs", (window as any).EJS_emulator);
+
+    console.log(
+      "emulatorjs1",
+      (window as any).EJS_emulator.gameManager
+    );
+
+    (window as any).EJS_emulator.gameManager.functions.simulateInput(0, 3, 1);
+    setTimeout(() => {
+      (window as any).EJS_emulator.gameManager.functions.simulateInput(0, 3, 0);
+    }, 200); // 100ms delay
+    // (window as any).EJS_emulator.gameManager.functions.restart();
+
+    // (window as any).EJS_emulator.pause();
   };
 
   return (
@@ -107,6 +126,10 @@ function App() {
           >
             Fake Enter Press
           </Button>
+          <Button type="default" onClick={() => fakeKey("Enter")}>
+            Fake Enter Key1
+          </Button>
+          <Input id="in" />
         </div>
       </div>
     </ConfigProvider>
