@@ -1,35 +1,32 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { ConfigProvider, theme } from "antd";
+
+import N64Environment from "./environments/N64Emulator";
+
+const { darkAlgorithm } = theme;
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <ConfigProvider
+      theme={{
+        algorithm: darkAlgorithm,
+      }}
+    >
+      <div
+        style={{
+          padding: "0px",
+          backgroundColor: "#211221",
+          color: "white",
+          height: "100vh",
+          width: "100vw",
+        }}
+      >
+        <N64Environment />
+        <div className="absolute bottom-1 left-1">
+          <p>aiN64</p>
+        </div>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </ConfigProvider>
+  );
 }
 
-export default App
+export default App;
