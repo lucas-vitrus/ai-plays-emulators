@@ -1,6 +1,7 @@
 import { ConfigProvider, theme } from "antd";
 
-import N64Environment from "./environments/N64Emulator";
+import N64Emulator3 from "./environments/N64Emulator3";
+import ShowCursor from "./components/ShowCursor";
 
 const { darkAlgorithm } = theme;
 
@@ -20,7 +21,8 @@ function App() {
           width: "100vw",
         }}
       >
-        <N64Environment />
+        <ShowCursor label="Human" hideCursor={true} />
+        <N64Emulator3 />
         <div className="absolute bottom-1 left-1">
           <p>aiN64</p>
         </div>

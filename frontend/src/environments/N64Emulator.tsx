@@ -4,8 +4,9 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 
 // --- Constants and Globals ---
 const AUDIOBUFFSIZE = 2048;
-// IMPORTANT: Replace this placeholder with your actual base64 encoded assets.zip
-const ASSETS_ZIP_BASE64 = "UEsDBAoAAAAA...";
+// Since we found the actual assets.zip file in public/n64, let's not use base64
+// Instead we'll dynamically load it when needed
+const ASSETS_ZIP_BASE64 = ""; // This placeholder will be ignored as we'll fetch the file directly
 const STRING_SELECTGAME = "Select Game ROM (N64)";
 const STRING_FULLSCREEN = "Toggle Fullscreen";
 const STRING_SOUND = "Toggle Sound";
@@ -19,6 +20,26 @@ const STRING_ERROR_STATE_MESSAGE =
   "Invalid file format. Please select a .state file.";
 const STRING_ERROR_OK = "OK";
 
+// Paths to check for Nintendo64.js
+const EMULATOR_PATHS = [
+  "/Nintendo64.js",           // Root of public - this is the correct one
+  "/n64/Nintendo64.js",       // In n64 subfolder
+  "./Nintendo64.js",          // Relative
+  "../Nintendo64.js",         // Parent
+  "Nintendo64.js",            // No leading slash
+  "/public/Nintendo64.js",    // Public folder explicit
+  "/assets/Nintendo64.js",    // Assets folder
+  "/static/Nintendo64.js",    // Static folder
+  "/js/Nintendo64.js",        // JS folder
+];
+
+// Also check for the WASM file path
+const WASM_PATHS = [
+  "/n64wasm.wasm",           // Root
+  "/n64/n64wasm.wasm",       // In n64 subfolder
+  "./n64wasm.wasm",          // Relative
+];
+
 // --- Helper Functions ---
 function base64ToArrayBuffer(base64: string): ArrayBuffer {
   const binary_string = window.atob(base64);
@@ -28,6 +49,35 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
     bytes[i] = binary_string.charCodeAt(i);
   }
   return bytes.buffer;
+}
+
+// Helper to detect N64 emulator issues
+function checkForCommonEmulationIssues(): string[] {
+  const issues: string[] = [];
+  
+  // Check for WebAssembly support
+  if (typeof WebAssembly === 'undefined') {
+    issues.push("WebAssembly is not supported in your browser. The N64 emulator requires WebAssembly support.");
+  }
+  
+  // Check for Audio API support
+  if (typeof AudioContext === 'undefined' && typeof (window as any).webkitAudioContext === 'undefined') {
+    issues.push("Web Audio API is not supported in your browser. Sound may not work properly.");
+  }
+  
+  // Check for MIME types being properly configured
+  fetch('/n64/n64wasm.wasm', { method: 'HEAD' })
+    .then(response => {
+      const contentType = response.headers.get('Content-Type');
+      if (contentType && !contentType.includes('application/wasm')) {
+        issues.push(`WASM file is served with incorrect MIME type: ${contentType}. Should be 'application/wasm'.`);
+      }
+    })
+    .catch(() => {
+      // We'll catch this elsewhere when loading the file
+    });
+    
+  return issues;
 }
 
 // --- Emscripten Module/FS Types ---
@@ -345,6 +395,14 @@ const N64Emulator: React.FC = () => {
   const [romName, setRomName] = useState<string | null>(null);
   const [areControlsVisible, setAreControlsVisible] = useState(true);
   const [scriptError, setScriptError] = useState<string | null>(null);
+  // Added state to track script loading status
+  const [scriptLoadingState, setScriptLoadingState] = useState<{
+    loaded: boolean;
+    error: boolean;
+    path?: string;
+  }>({ loaded: false, error: false });
+  // Add state for emulation issues
+  const [emulationIssues, setEmulationIssues] = useState<string[]>([]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const romFileInputRef = useRef<HTMLInputElement>(null);
@@ -361,124 +419,292 @@ const N64Emulator: React.FC = () => {
     () => isEmulatorRunningRef.current,
     []
   );
-  const getRomNameCallback = useCallback(() => romName, [romName]); // Renamed to avoid conflict
+  const getRomNameCallback = useCallback(() => romName, [romName]);
 
+  // Check for common emulation issues
   useEffect(() => {
-    if (!canvasRef.current) return;
+    const issues = checkForCommonEmulationIssues();
+    if (issues.length > 0) {
+      console.warn("Emulation issues detected:", issues);
+      setEmulationIssues(issues);
+    }
+  }, []);
 
-    // Step 1: Prepare window.Module as Nintendo64.js expects
-    console.log("Setting up initial window.Module with canvas");
-    (window as any).Module = {
-      canvas: canvasRef.current,
-      // Other initialization properties Nintendo64.js might expect
-      preRun: [(window as any).Module?.preRun || []].flat(),
-      onRuntimeInitialized: function () {
-        console.log("Module runtime initialized!");
-      },
-    };
+  // 1. First useEffect: Try loading Nintendo64.js from various paths
+  useEffect(() => {
+    if (!canvasRef.current) {
+      console.error("Canvas reference not available for script loading");
+      return;
+    }
 
-    const script = document.createElement("script");
-    script.src = "/Nintendo64.js";
-    script.async = true;
-
-    script.onload = () => {
-      console.log(
-        "Nintendo64.js script loaded. Current window.Module state:",
-        window.Module
-      );
-
-      // Debug output to check what's available
-      console.log("Module properties:", Object.keys(window.Module || {}));
-      console.log("Is window.FS defined?", !!window.FS);
-      console.log(
-        "Is window.Module.FS defined?",
-        !!(window.Module && window.Module.FS)
-      );
-
-      const moduleCheckTimeout = setTimeout(() => {
-        console.error("Timed out waiting for Module to be fully initialized");
-        setScriptError(
-          "Timed out waiting for emulator to initialize. The WASM file may not be loading correctly due to MIME type issues."
-        );
-        setIsEmulatorScriptLoaded(false);
-      }, 10000); // 10 second timeout
-
-      const checkModuleReady = setInterval(() => {
-        // Log progress to help debug
-        console.log("Checking if Module is ready...");
-        console.log("Module properties now:", Object.keys(window.Module || {}));
-
-        // Nintendo64.js should have augmented the existing window.Module
-        // Less strict check that doesn't require callMain
-        if (window.Module && window.Module.FS && canvasRef.current) {
-          clearInterval(checkModuleReady);
-          clearTimeout(moduleCheckTimeout);
-          console.log("Emscripten Module appears ready!");
-
-          // Ensure FS is also available on window if MyN64Class expects window.FS
-          if (!window.FS) {
-            console.log("Setting window.FS from Module.FS");
-            (window as any).FS = window.Module.FS;
+    console.log("Starting search for Nintendo64.js...");
+    
+    // Track all attempted paths for debugging
+    const attemptedPaths: string[] = [];
+    
+    // Also check for WASM availability to proactively prevent issues
+    Promise.all(
+      WASM_PATHS.map(path => 
+        fetch(path, { method: 'HEAD' })
+          .then(response => ({ path, status: response.status }))
+          .catch(() => ({ path, status: 0 }))
+      )
+    ).then(results => {
+      const foundWasm = results.find(r => r.status === 200);
+      if (foundWasm) {
+        console.log(`Found WASM file at: ${foundWasm.path}`);
+        
+        // If using n64 subfolder for WASM, we might want to prioritize the same folder for JS
+        if (foundWasm.path.includes('/n64/')) {
+          // Move the n64 subfolder path to the top of the list if WASM was found there
+          const n64JsPath = "/n64/Nintendo64.js";
+          const index = EMULATOR_PATHS.indexOf(n64JsPath);
+          if (index > 0) {
+            EMULATOR_PATHS.splice(index, 1);
+            EMULATOR_PATHS.unshift(n64JsPath);
           }
-
-          // Create our controller class
-          console.log("Creating MyN64Class instance");
-          try {
-            myN64ClassInstanceRef.current = new MyN64Class(
-              canvasRef.current,
-              window.Module,
-              window.Module.FS,
-              getGameSoundEnabled,
-              getIsEmulatorRunning,
-              getRomNameCallback,
-              setRomName
-            );
-            console.log("MyN64Class instance created successfully");
-            setIsEmulatorScriptLoaded(true);
-          } catch (err) {
-            console.error("Error creating MyN64Class:", err);
-            setScriptError(`Error initializing N64 emulator: ${err}`);
-            setIsEmulatorScriptLoaded(false);
-          }
-        } else {
-          // Report what's missing
-          if (!window.Module) console.log("window.Module not defined yet");
-          else if (!window.Module.FS)
-            console.log("window.Module.FS not defined yet");
-          else if (!canvasRef.current) console.log("canvas not available");
         }
-      }, 1000); // Check every second instead of 100ms
+      } else {
+        console.warn("WASM file not found in any of the checked paths");
+        setEmulationIssues(prev => [...prev, "WASM file not found. The emulator won't work without it."]);
+      }
+    });
 
-      return () => {
-        clearInterval(checkModuleReady);
-        clearTimeout(moduleCheckTimeout);
+    // Function to check if a file exists at a given URL
+    const checkFileExists = async (url: string): Promise<boolean> => {
+      try {
+        const response = await fetch(url, { method: 'HEAD' });
+        return response.ok;
+      } catch (error) {
+        console.warn(`Failed to check ${url}:`, error);
+        return false;
+      }
+    };
+
+    // Function to actually load the script
+    const loadScript = (scriptPath: string) => {
+      console.log(`Loading Nintendo64.js from: ${scriptPath}`);
+      
+      // Prepare the Module object before loading the script
+      (window as any).Module = {
+        canvas: canvasRef.current,
+        preRun: [(window as any).Module?.preRun || []].flat(),
+        onRuntimeInitialized: function () {
+          console.log("Module runtime initialized!");
+        },
+        print: function (text: string) {
+          console.log("Module stdout:", text);
+        },
+        printErr: function (text: string) {
+          console.warn("Module stderr:", text);
+        },
+        // Try to explicitly set the locateFile function to help find WASM
+        locateFile: function(path: string, scriptDirectory: string) {
+          if (path.endsWith('.wasm')) {
+            // Check if we found a WASM path above
+            for (const wasmPath of WASM_PATHS) {
+              if (wasmPath.includes('/n64/')) {
+                return wasmPath;
+              }
+            }
+            
+            // If the JS file is in the /n64/ directory, look for WASM there too
+            if (scriptPath.includes('/n64/')) {
+              return '/n64/n64wasm.wasm';
+            }
+          }
+          return scriptDirectory + path;
+        }
       };
+
+      // Create and add the script element
+      const script = document.createElement("script");
+      script.src = scriptPath;
+      script.async = true;
+      script.id = "n64-emulator-script";
+
+      // Remove any existing script (for hot reloading)
+      const existingScript = document.getElementById("n64-emulator-script");
+      if (existingScript) {
+        console.log("Removing existing N64 script");
+        existingScript.parentNode?.removeChild(existingScript);
+      }
+
+      script.onload = () => {
+        console.log(`Successfully loaded script from ${scriptPath}`);
+        setScriptLoadingState({ loaded: true, error: false, path: scriptPath });
+      };
+
+      script.onerror = (err) => {
+        console.error(`Failed to load script from ${scriptPath}:`, err);
+        attemptedPaths.push(scriptPath);
+        
+        // Try next path if available
+        tryNextPath();
+      };
+
+      document.body.appendChild(script);
     };
 
-    script.onerror = (err) => {
-      console.error("Failed to load Nintendo64.js script:", err);
-      setScriptError(
-        "Error: Could not load the N64 emulator core (Nintendo64.js). Check if the file exists in the public folder."
-      );
-      setIsEmulatorScriptLoaded(false);
+    // Try each path in sequence until one works
+    let pathIndex = 0;
+    
+    const tryNextPath = async () => {
+      if (pathIndex >= EMULATOR_PATHS.length) {
+        // We've tried all paths and none worked
+        console.error("Failed to load Nintendo64.js from any path:", attemptedPaths);
+        setScriptError(
+          `Could not find Nintendo64.js. Please ensure the file exists in one of these locations: ${EMULATOR_PATHS.join(", ")}`
+        );
+        setScriptLoadingState({ loaded: false, error: true });
+        return;
+      }
+
+      const currentPath = EMULATOR_PATHS[pathIndex++];
+      console.log(`Checking path ${pathIndex}/${EMULATOR_PATHS.length}: ${currentPath}`);
+      
+      const exists = await checkFileExists(currentPath);
+      if (exists) {
+        console.log(`Found Nintendo64.js at: ${currentPath}`);
+        loadScript(currentPath);
+      } else {
+        console.log(`Nintendo64.js not found at: ${currentPath}`);
+        attemptedPaths.push(currentPath);
+        tryNextPath();
+      }
     };
 
-    document.body.appendChild(script);
+    // Start the search
+    tryNextPath();
 
     return () => {
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
+      // Cleanup script element on unmount
+      const scriptElem = document.getElementById("n64-emulator-script");
+      if (scriptElem && scriptElem.parentNode) {
+        console.log("Removing Nintendo64.js script from document");
+        scriptElem.parentNode.removeChild(scriptElem);
       }
+    };
+  }, []); // Empty dependency array - only run once on mount
+
+  // 2. Second useEffect: Handle emulator initialization after script is loaded
+  useEffect(() => {
+    if (!scriptLoadingState.loaded || scriptLoadingState.error) {
+      // Either not loaded yet or there was an error
+      return;
+    }
+
+    console.log("Script loaded successfully, initializing emulator");
+
+    // Debug output to check what's available
+    console.log("Module properties:", Object.keys(window.Module || {}));
+    console.log("Is window.FS defined?", !!window.FS);
+    console.log(
+      "Is window.Module.FS defined?",
+      !!(window.Module && window.Module.FS)
+    );
+
+    // Debug if window.Module has essential Emscripten methods
+    if (window.Module) {
+      console.log("Module methods check:");
+      console.log(
+        "  - callMain:",
+        typeof window.Module.callMain === "function"
+          ? "✅ Present"
+          : "❌ Missing"
+      );
+      console.log(
+        "  - cwrap:",
+        typeof window.Module.cwrap === "function" ? "✅ Present" : "❌ Missing"
+      );
+      console.log(
+        "  - _runMainLoop:",
+        typeof window.Module._runMainLoop === "function"
+          ? "✅ Present"
+          : "❌ Missing"
+      );
+    }
+
+    const moduleCheckTimeout = setTimeout(() => {
+      console.error("Timed out waiting for Module to be fully initialized");
+      console.log("Final window.Module state:", window.Module);
+      // Check for WASM issues specifically
+      const networkRequests = performance.getEntriesByType("resource");
+      const wasmRequests = networkRequests.filter(
+        (req) => req.name.includes(".wasm") || req.name.includes("Nintendo64")
+      );
+      console.log("WASM-related network requests:", wasmRequests);
+
+      setScriptError(
+        "Timed out waiting for emulator to initialize. The WASM file may not be loading correctly due to MIME type issues."
+      );
+      setIsEmulatorScriptLoaded(false);
+    }, 10000); // 10 second timeout
+
+    const checkModuleReady = setInterval(() => {
+      // Log progress to help debug
+      console.log("Checking if Module is ready...");
+      console.log("Module properties now:", Object.keys(window.Module || {}));
+
+      // Less strict check that doesn't require callMain
+      if (window.Module && window.Module.FS && canvasRef.current) {
+        clearInterval(checkModuleReady);
+        clearTimeout(moduleCheckTimeout);
+        console.log("Emscripten Module appears ready!");
+
+        // Ensure FS is also available on window if MyN64Class expects window.FS
+        if (!window.FS) {
+          console.log("Setting window.FS from Module.FS");
+          (window as any).FS = window.Module.FS;
+        }
+
+        // Create our controller class
+        console.log("Creating MyN64Class instance");
+        try {
+          myN64ClassInstanceRef.current = new MyN64Class(
+            canvasRef.current,
+            window.Module,
+            window.Module.FS,
+            getGameSoundEnabled,
+            getIsEmulatorRunning,
+            getRomNameCallback,
+            setRomName
+          );
+          console.log("MyN64Class instance created successfully");
+          setIsEmulatorScriptLoaded(true);
+        } catch (err) {
+          console.error("Error creating MyN64Class:", err);
+          setScriptError(`Error initializing N64 emulator: ${err}`);
+          setIsEmulatorScriptLoaded(false);
+        }
+      } else {
+        // Report what's missing
+        if (!window.Module) console.log("window.Module not defined yet");
+        else if (!window.Module.FS)
+          console.log("window.Module.FS not defined yet");
+        else if (!canvasRef.current) console.log("canvas not available");
+      }
+    }, 1000); // Check every second
+
+    return () => {
+      clearInterval(checkModuleReady);
+      clearTimeout(moduleCheckTimeout);
       if (
         window.myApp &&
         myN64ClassInstanceRef.current &&
         window.myApp === myN64ClassInstanceRef.current
       ) {
+        console.log("Cleaning up window.myApp reference");
         delete (window as any).myApp;
       }
-      console.log("N64Emulator component unmounted. Script removed.");
     };
-  }, [getGameSoundEnabled, getIsEmulatorRunning, getRomNameCallback]);
+  }, [
+    scriptLoadingState.loaded,
+    scriptLoadingState.error,
+    getGameSoundEnabled,
+    getIsEmulatorRunning,
+    getRomNameCallback,
+  ]);
 
   useEffect(() => {
     localStorage.setItem(
@@ -531,9 +757,6 @@ const N64Emulator: React.FC = () => {
         e.keyCode === 0
       ) {
         console.log("Emulator menu key pressed (default: backtick)");
-        // e.preventDefault(); // Prevent default if it opens a browser feature
-        // e.stopPropagation();
-        // Potentially toggle an in-app menu here if desired
       }
     };
 
@@ -586,16 +809,13 @@ const N64Emulator: React.FC = () => {
   };
 
   const toggleSoundHandler = () => {
-    // Renamed to avoid conflict with global toggleSound
     setGameSoundEnabled((prev) => !prev);
   };
 
   const saveStateHandler = () => {
-    // Renamed
     try {
       if (window.Module && window.Module._neil_serialize) {
         window.Module._neil_serialize();
-        // SaveStateEvent in MyN64Class will be triggered by Emscripten
       } else {
         console.warn("Module or _neil_serialize not available for save state.");
         alert("Save state function is not ready.");
@@ -607,7 +827,6 @@ const N64Emulator: React.FC = () => {
   };
 
   const loadStateHandler = () => {
-    // Renamed
     stateFileInputRef.current?.click();
   };
 
@@ -660,7 +879,6 @@ const N64Emulator: React.FC = () => {
   };
 
   const reloadGameHandler = () => {
-    // Renamed
     try {
       if (window.Module && window.Module._neil_reset) {
         console.log("Reloading game...");
@@ -680,11 +898,13 @@ const N64Emulator: React.FC = () => {
       if (document.fullscreenElement) {
         document.exitFullscreen();
       } else {
-        // Prefer fullscreening the canvas container or a dedicated wrapper
         const emuContainer = document.querySelector(".n64-emulator-container");
-        if (emuContainer && emuContainer.requestFullscreen) {
+        if (emuContainer && "requestFullscreen" in emuContainer) {
           emuContainer.requestFullscreen();
-        } else if (canvasRef.current && canvasRef.current.requestFullscreen) {
+        } else if (
+          canvasRef.current &&
+          "requestFullscreen" in canvasRef.current
+        ) {
           canvasRef.current.requestFullscreen();
         } else {
           document.documentElement.requestFullscreen();
@@ -695,21 +915,47 @@ const N64Emulator: React.FC = () => {
     }
   };
 
-  if (scriptError) {
+  // Additional loading state when script loads but before module is fully initialized
+  if (scriptLoadingState.loaded && !isEmulatorScriptLoaded) {
+    return (
+      <div style={{ padding: "20px", textAlign: "center" }}>
+        <div>Script loaded. Waiting for Emulator Module to initialize...</div>
+        <div style={{ margin: "10px", fontSize: "12px", color: "#666" }}>
+          This may take several seconds. If it takes too long, check console for
+          WASM errors.
+        </div>
+      </div>
+    );
+  }
+
+  // Update the Error display to include emulation issues
+  if (scriptError || emulationIssues.length > 0) {
     return (
       <div style={{ padding: "20px", textAlign: "center", color: "red" }}>
         <h2>Emulator Error</h2>
-        <p>{scriptError}</p>
+        {scriptError && <p>{scriptError}</p>}
+        
+        {emulationIssues.length > 0 && (
+          <>
+            <h3>System Compatibility Issues</h3>
+            <ul style={{ textAlign: "left", display: "inline-block" }}>
+              {emulationIssues.map((issue, i) => (
+                <li key={i}>{issue}</li>
+              ))}
+            </ul>
+          </>
+        )}
+        
         <p>
-          Please ensure <code>Nintendo64.js</code> is in the <code>public</code>{" "}
-          folder and any required <code>.wasm</code> files are served correctly
-          (MIME type <code>application/wasm</code>).
+          Please ensure <code>Nintendo64.js</code> and <code>n64wasm.wasm</code> are in the correct location
+          (usually in the <code>public</code> or <code>public/n64</code> folder) and served with the correct MIME type.
         </p>
       </div>
     );
   }
 
-  if (!isEmulatorScriptLoaded) {
+  // Initial loading state
+  if (!scriptLoadingState.loaded || !isEmulatorScriptLoaded) {
     return (
       <div style={{ padding: "20px", textAlign: "center" }}>
         Loading N64 Emulator Core...
@@ -717,6 +963,7 @@ const N64Emulator: React.FC = () => {
     );
   }
 
+  // Main component UI
   return (
     <div className="n64-emulator-container tw-relative tw-w-full tw-h-screen tw-bg-gray-800 dark:tw-bg-black tw-flex tw-justify-center tw-items-center tw-overflow-hidden">
       <input

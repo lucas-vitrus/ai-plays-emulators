@@ -10,6 +10,7 @@
         "bun": "^1.2.12",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
+        "react-emulatorjs": "^2.2.6",
         "tailwindcss": "^4.1.6",
         "zustand": "^5.0.4",
       },
@@ -742,6 +743,8 @@
     "react": ["react@19.1.0", "", {}, "sha512-FS+XFBNvn3GTAWq26joslQgWNoFu08F4kl0J4CgdNKADkdSGXQyTCnKteIAJy96Br6YbpEU1LSzV5dYtjMkMDg=="],
 
     "react-dom": ["react-dom@19.1.0", "", { "dependencies": { "scheduler": "^0.26.0" }, "peerDependencies": { "react": "^19.1.0" } }, "sha512-Xs1hdnE+DyKgeHJeJznQmYMIBG3TKIHJJT95Q58nHLSrElKlGQqDTR2HQ9fx5CN/Gk6Vh/kupBTDLU11/nDk/g=="],
+
+    "react-emulatorjs": ["react-emulatorjs@2.2.6", "", { "peerDependencies": { "react": "^18.2.0", "react-dom": "^18.2.0" } }, "sha512-PEJZXu012/kB8IsMx3VFWe4Bu/eDvA+wQlH5hDKHGOADDmvhUuQZcttgma03XRr8qEA6jXcEUvz00QtjSP3t7Q=="],
 
     "react-is": ["react-is@18.3.1", "", {}, "sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg=="],
 

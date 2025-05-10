@@ -16,6 +16,7 @@
     "bun": "^1.2.12",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-emulatorjs": "^2.2.6",
     "tailwindcss": "^4.1.6",
     "zustand": "^5.0.4"
   },
