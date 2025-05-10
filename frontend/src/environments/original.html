@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>Nintendo 64</title>
+		
+			function readFile(files)
+				{
+				try
+					{
+					// GETTING THE FILE EXTENSION
+					var extension = files[0].name.split(".").pop().toLowerCase();
+
+					// CHECKING THE FILE EXTENSION
+					if (extension=="n64")
+						{
+						// CREATING THE FILE READER
+						var filereader = new FileReader();
+
+						// SETTING THE FILENAME
+						filereader.file_name = files[0].name;
+
+						// SETTING WHAT WILL HAPPEN WHEN THE FILE IS READ
+						filereader.onload = function()
+							{
+							// SETTING THE FILE CONTENT
+							ROMDATA = this.result;
+							ROMNAME = files[0].name;
+
+							// CLEARING THE SELECTED FILE VALUE
+							document.getElementById("gui_controls_file").value = null;
+
+							// HIDING THE UI
+							document.getElementsByClassName("gui_container")[0].style.display = "none";
+
+							// STARTING THE NINTENDO 64 EMULATOR
+							myClass.LoadEmulator(ROMDATA);
+							};
+
+						// READING THE SELECTED FILE
+						filereader.readAsArrayBuffer(files[0]);
+						}
+						else
+						{
+						// SHOWING AN ALERT MESSAGE WITH THE COMPATIBLE FILE FORMAT
+						alertCustom(STRING_ERROR_TITLE,STRING_ERROR_MESSAGE,STRING_ERROR_OK, function(){});
+						}
+					}
+					catch(err)
+					{
+					}
+				}
+
+			function toggleSound()
+				{
+				try
+					{
+					// CHECKING IF THE SOUND IS ENABLED
+					if (GAME_SOUND_ENABLED==true)
+						{
+						// DISABLING THE SOUND
+						GAME_SOUND_ENABLED = false;
+
+						// SHOWING THE DISABLED SOUND ICON
+						document.getElementById("gui_sound_handler").className = "gui_sound_off";
+						}
+						else
+						{
+						// ENABLIND THE SOUND
+						GAME_SOUND_ENABLED = true;
+
+						// SHOWING THE ENABLED SOUND ICON
+						document.getElementById("gui_sound_handler").className = "gui_sound_on";
+						}
+
+					// SAVING THE USER PREFERENCE
+					setBooleanSetting("GAME_SOUND_ENABLED", GAME_SOUND_ENABLED);
+					}
+					catch(err)
+					{
+					}
+				}
+
+			function saveState()
+				{
+				try
+					{
+					// CALLING THE EMSCRIPTEN FUNCTION TO SAVE THE STATE
+					Module._neil_serialize();
+					}
+					catch(err)
+					{
+					}
+				}
+
+			function loadState()
+				{
+				try
+					{
+					// ALLOWING THE USER TO SELECT THE ROMSTATE FILE FROM THE COMPUTER OR MOBILE DEVICE
+					document.getElementById("fileupload_uploader").click();
+					}
+					catch(err)
+					{
+					}
+				}
+
+			function loadState_GetFile(files)
+				{
+				try
+					{
+					// GETTING THE FILE EXTENSION
+					var extension = files[0].name.split(".").pop().toLowerCase();
+
+					// CHECKING THE FILE EXTENSION
+					if (extension=="state")
+						{
+						// CREATING THE FILE READER
+						var filereader = new FileReader();
+
+						// GETTING THE FILENAME
+						filereader.file_name = files[0].name;
+
+						// SETTING THAT WILL HAPPEN WHEN THE FILE IS READ
+						filereader.onload = function()
+							{
+							// WRITING THE FILE STATE
+							FS.writeFile("/savestate.gz", new Uint8Array(this.result));
+
+							// CALLING THE EMSCRIPTEN FUNCTION TO LOAD THE STATE
+							Module._neil_unserialize();
+
+							// CLEARING THE SELECTED FILE VALUE
+							document.getElementById("fileupload_uploader").value = null;
+							};
+
+						// READING THE SELECTED FILE
+						filereader.readAsArrayBuffer(files[0]);
+						}
+					}
+					catch(err)
+					{
+					}
+				}
+
+			function reloadGame()
+				{
+				try
+					{
+					// CALLING THE EMSCRIPTEN FUNCTION TO RELOAD THE GAME
+					Module._neil_reset();
+					}
+					catch(err)
+					{
+					}
+				}
+
+			class MyClass
+				{
+				constructor()
+					{
+					var Module = {};
+					Module["canvas"] = document.getElementById("canvas");
+					window["Module"] = Module;
+					}
+
+				LoadEmulator(byteArray)
+					{
+					// WRITING THE ASSETS ZIP FILE
+					FS.writeFile("assets.zip", new Uint8Array(base64ToArrayBuffer(assetsZip)));
+
+					// WRITING THE GAME ROM FILE
+					FS.writeFile("custom.v64", new Uint8Array(byteArray));
+
+					// CHECKING IF THE GAME IS STAR WARS EPISODE 1 RACER
+					if (/star.*wars.*racer.*n64/gi.test(ROMNAME)==true)
+						{
+						// ADJUSTING CANVAS IN ORDER TO REMOVE THE BLACK BORDERS THAT THE GAME HAS
+						document.getElementsByTagName("canvas")[0].className = "game_star_wars_racer";
+						}
+						else
+						{
+						// REMOVING CUSTOM STYLE FOR OTHER GAMES
+						document.getElementsByTagName("canvas")[0].className = undefined;
+						}
+
+					// CREATING THE VARIABLE FOR THE GAME CONFIGURATION
+					var configString = "";
+
+					// GAMEPAD
+					configString += "0" + "\r\n";					// Joy_Mapping_Up
+					configString += "0" + "\r\n";					// Joy_Mapping_Down
+					configString += "0" + "\r\n";					// Joy_Mapping_Left
+					configString += "0" + "\r\n";					// Joy_Mapping_Right
+					configString += "0" + "\r\n";					// Joy_Mapping_Action_A
+					configString += "0" + "\r\n";					// Joy_Mapping_Action_B
+					configString += "0" + "\r\n";					// Joy_Mapping_Action_Start
+					configString += "0" + "\r\n";					// Joy_Mapping_Action_Z
+					configString += "0" + "\r\n";					// Joy_Mapping_Action_L
+					configString += "0" + "\r\n";					// Joy_Mapping_Action_R
+					configString += "0" + "\r\n";					// Joy_Mapping_Menu
+					configString += "0" + "\r\n";					// Joy_Mapping_Menu
+					configString += "0" + "\r\n";					// Joy_Mapping_Menu
+					configString += "0" + "\r\n";					// Joy_Mapping_Menu
+					configString += "0" + "\r\n";					// Joy_Mapping_Menu
+
+					// KEYBOARD
+					configString += "f" + "\r\n";					// Mapping_Left
+					configString += "h" + "\r\n";					// Mapping_Right
+					configString += "t" + "\r\n";					// Mapping_Up
+					configString += "g" + "\r\n";					// Mapping_Down
+					configString += "Enter" + "\r\n";				// Mapping_Action_Start
+					configString += "i" + "\r\n";					// Mapping_Action_CUP
+					configString += "k" + "\r\n";					// Mapping_Action_CDOWN
+					configString += "j" + "\r\n";					// Mapping_Action_CLEFT
+					configString += "l" + "\r\n";					// Mapping_Action_CRIGHT
+					configString += "a" + "\r\n";					// Mapping_Action_Z
+					configString += "q" + "\r\n";					// Mapping_Action_L
+					configString += "w" + "\r\n";					// Mapping_Action_R
+					configString += "s" + "\r\n";					// Mapping_Action_B
+					configString += "d" + "\r\n";					// Mapping_Action_A
+					configString += "`" + "\r\n";					// Mapping_Menu
+					configString += "ArrowUp" + "\r\n";				// Mapping_Action_Analog_Up
+					configString += "ArrowDown" + "\r\n";			// Mapping_Action_Analog_Down
+					configString += "ArrowLeft" + "\r\n";			// Mapping_Action_Analog_Left
+					configString += "ArrowRight" + "\r\n";			// Mapping_Action_Analog_Right
+
+					// LOAD SAVE FILES
+					configString += "0" + "\r\n";
+					configString += "0" + "\r\n";
+					configString += "0" + "\r\n";
+
+					// SHOW FPS
+					configString += "0" + "\r\n";
+
+					// SWAP STICKS
+					configString += "0" + "\r\n";
+
+					// DISABLE AUDIO SYNC
+					configString += "0" + "\r\n";
+
+					// INVERT PLAYER Y AXIS
+					configString += "0" + "\r\n";
+					configString += "0" + "\r\n";
+					configString += "0" + "\r\n";
+
+					// MOBILE MODE
+					configString += "0" + "\r\n";
+
+					// ANGRYLION SOFTWARE RENDERER
+					configString += "0" + "\r\n";
+
+					// MOUSE MODE
+					configString += "0" + "\r\n";
+
+					// USE VBO
+					configString += "0" + "\r\n";
+
+					// RICE PLUGIN
+					configString += "0" + "\r\n";
+
+					// WRITING THE CONFIGURATION FILE
+					FS.writeFile("config.txt", configString);
+
+					// INITIALIZING THE AUDIO
+					this.initAudio();
+
+					// STARTING THE EMULATOR
+					Module.callMain(["custom.v64"]);
+
+					this.setRemainingAudio = Module.cwrap('neil_set_buffer_remaining', null, ['number']);
+					}
+
+				initAudio()
+					{
+					this.audioContext = new AudioContext({ latencyHint: "interactive", sampleRate: 44100 });
+					this.gainNode = this.audioContext.createGain();
+					this.gainNode.gain.value = 0.5;
+					this.gainNode.connect(this.audioContext.destination);
+
+					// POINT AT WHERE THE EMULATOR IS STORING THE AUDIO BUFFER
+					this.audioBufferResampled = new Int16Array(Module.HEAP16.buffer,Module._neilGetSoundBufferResampledAddress(),64000);
+					this.audioWritePosition = 0;
+					this.audioReadPosition = 0;
+					this.audioBackOffCounter = 0;
+					this.audioThreadLock = false;
+
+					// EMULATOR IS SYNCED TO THE ONAUDIOPROCESS EVENT BECAUSE IT'S WAY
+					// MORE ACCURATE THAN EMSCRIPTEN_SET_MAIN_LOOP OR RAF
+					// AND THE OLD METHOD WAS HAVING CONSTANT EMULATOR SLOWDOWN SWINGS
+					// SO THE AUDIO SUFFERED AS A RESULT
+					this.pcmPlayer = this.audioContext.createScriptProcessor(AUDIOBUFFSIZE, 2, 2);
+					this.pcmPlayer.onaudioprocess = this.AudioProcessRecurring.bind(this);
+					this.pcmPlayer.connect(this.gainNode);
+					}
+
+				hasEnoughSamples()
+					{
+					var readPositionTemp = this.audioReadPosition;
+					var enoughSamples = true;
+					for (var sample = 0; sample < AUDIOBUFFSIZE; sample++)
+						{
+						if (this.audioWritePosition != readPositionTemp)
+							{
+							readPositionTemp += 2;
+
+							// WRAP BACK AROUND WITHIN THE RING BUFFER
+							if (readPositionTemp == 64000)
+								{
+								readPositionTemp = 0;
+								}
+							}
+							else
+							{
+							enoughSamples = false;
+							}
+						}
+
+					return enoughSamples;
+					}
+
+				// THIS METHOD KEEPS GETTING CALLED WHEN IT NEEDS MORE AUDIO
+				// DATA TO PLAY SO WE JUST KEEP STREAMING IT FROM THE EMULATOR
+				AudioProcessRecurring(audioProcessingEvent)
+					{
+					// I THINK THIS METHOD IS THREAD SAFE BUT JUST IN CASE
+					if (this.audioThreadLock){return;}
+
+					// CHECKING IF THE EMULATOR SHOULD NOT BE RUNNING
+					if (Emulator_running==false){return;}
+
+					this.audioThreadLock = true;
+
+					var sampleRate = audioProcessingEvent.outputBuffer.sampleRate;
+					var outputBuffer = audioProcessingEvent.outputBuffer;
+					var outputData1 = outputBuffer.getChannelData(0);
+					var outputData2 = outputBuffer.getChannelData(1);
+
+					Module._runMainLoop();
+
+					this.audioWritePosition = Module._neilGetAudioWritePosition();
+
+					if (!this.hasEnoughSamples())
+						{
+						Module._runMainLoop();
+						}
+
+					this.audioWritePosition = Module._neilGetAudioWritePosition();
+
+					// THE BYTES ARE ARRANGED L,R,L,R, ETC.... FOR EACH SPEAKER
+					for (let sample = 0; sample < AUDIOBUFFSIZE; sample++)
+						{
+						if (this.audioWritePosition != this.audioReadPosition)
+							{
+							if (GAME_SOUND_ENABLED == true)
+								{
+								outputData1[sample] = (this.audioBufferResampled[this.audioReadPosition] / 32768);
+								outputData2[sample] = (this.audioBufferResampled[this.audioReadPosition + 1] / 32768);
+								}
+							else
+								{
+								outputData1[sample] = 0;
+								outputData2[sample] = 0;
+								}
+
+							this.audioReadPosition += 2;
+
+							// WRAP BACK AROUND WITHIN THE RING BUFFER
+							if (this.audioReadPosition == 64000)
+								{
+								this.audioReadPosition = 0;
+								}
+							}
+							else
+							{
+							// IF THERE'S NOTHING TO PLAY THEN JUST PLAY SILENCE
+							outputData1[sample] = 0;
+							outputData2[sample] = 0;
+							}
+						}
+
+					// CALCULATE REMAINING AUDIO IN BUFFER
+					let audioBufferRemaining = 0;
+					let readPositionTemp = this.audioReadPosition;
+					let writePositionTemp = this.audioWritePosition;
+
+					for(let i = 0; i < 64000; i++)
+						{
+						if (readPositionTemp != writePositionTemp)
+							{
+							readPositionTemp += 2;
+							audioBufferRemaining += 2;
+
+							if (readPositionTemp == 64000)
+								{
+								readPositionTemp = 0;
+								}
+							}
+						}
+
+					this.setRemainingAudio(audioBufferRemaining);
+					this.audioThreadLock = false;
+					}
+
+				// WHEN IT RETURNS FROM EMSCRIPTEN
+				SaveStateEvent()
+					{
+					var compressed = FS.readFile("/savestate.gz"); // THIS IS A UINT8ARRAY
+
+					// GETTING THE ROM FILENAME WITHOUT THE EXTENSION
+					var fileName = ROMNAME.replace(/\.[^/.]+$/, "");
+
+					// DOWNLOADING THE ROMSTATE AS A FILE
+					this.download_Blob(compressed, fileName + ".state", "application/octet-stream");
+
+					var request = indexedDB.open("N64WASMDB");
+					request.onsuccess = function (ev)
+						{
+						var db = ev.target.result;
+						var romStore = db.transaction("N64WASMSTATES", "readwrite").objectStore("N64WASMSTATES");
+						var addRequest = romStore.put(compressed, "custom.v64");
+						}
+					}
+
+				download_Blob(data, fileName, mimeType)
+					{
+					var blob, url;
+					blob = new Blob([data], {type: mimeType});
+					url = window.URL.createObjectURL(blob);
+					this.download_URL(url, fileName);
+					}
+
+				download_URL(data, fileName)
+					{
+					var a;
+					a = document.createElement("a");
+					a.href = data;
+					a.download = fileName;
+					document.body.appendChild(a);
+					a.style = "display: none";
+					a.click();
+					a.remove();
+					}
+				}
+
+			function detectEmulatorKey(e)
+				{
+				try
+					{
+					// GETTING THE KEY EVENT
+					e = e || window.event;
+
+					// CHECKING IF THE USER IS PRESSING THE EMULATOR MENU KEY
+					if (e.keyCode == 192 || e.keyCode == 0)
+						{
+						e.preventDefault();
+						e.stopPropagation();
+						e.stopImmediatePropagation();
+						}
+					}
+					catch(err)
+					{
+					}
+				}
+
+			var myClass = new MyClass();
+			window["myApp"] = myClass; // SO THAT I CAN REFERENCE FROM EM_ASM
+
+			window.addEventListener("blur", function()
+				{
+				try
+					{
+					// PAUSING THE EMULATION
+					Emulator_running = false;
+					}
+					catch(err)
+					{
+					}
+				});
+
+			window.addEventListener("focus", function()
+				{
+				try
+					{
+					// RESUMING THE EMULATION
+					Emulator_running = true;
+					}
+					catch(err)
+					{
+					}
+				});
+
+			function goBackButtonResetIncrement()
+					{
+					try
+						{
+						// CLEARING THE MOVEMENTS IDLE TIMER
+						MOVEMENTS_IDLE = 0;
+
+						// CHECKING IF A GAME IS RUNNING
+						if (document.getElementsByClassName("gui_container")[0].style.display == "none")
+							{
+							// SHOWING THE FULLSCREEN BUTTON
+							document.getElementsByClassName("gui_fullscreen")[0].style.display = "block";
+
+							// SHOWING THE SOUND TOGGLE BUTTON
+							document.getElementById("gui_sound_handler").style.display = "block";
+
+							// SHOWING THE DOWNLOAD BUTTON
+							document.getElementsByClassName("gui_download")[0].style.display = "block";
+
+							// SHOWING THE UPLOAD BUTTON
+							document.getElementsByClassName("gui_uploadsave")[0].style.display = "block";
+
+							// SHOWING THE RELOAD BUTTON
+							document.getElementsByClassName("gui_reload")[0].style.display = "block";
+							}
+						}
+						catch(err)
+						{
+						}
+					}
+
+				function goBackButtonTimerIncrement()
+					{
+					try
+						{
+						// UPDATING THE MOVEMENTS IDLE TIMER
+						MOVEMENTS_IDLE = MOVEMENTS_IDLE + 1;
+
+						// CHECKING THE MOVEMENTS IDLE TIMER IS EQUAL OR GREATER THAN 3 SECONDS
+						if (MOVEMENTS_IDLE >= 3)
+							{
+							// HIDING THE FULLSCREEN BUTTON
+							document.getElementsByClassName("gui_fullscreen")[0].style.display = "none";
+
+							// HIDING THE SOUND TOGGLE BUTTON
+							document.getElementById("gui_sound_handler").style.display = "none";
+
+							// HIDING THE DOWNLOAD BUTTON
+							document.getElementsByClassName("gui_download")[0].style.display = "none";
+
+							// HIDING THE UPLOAD BUTTON
+							document.getElementsByClassName("gui_uploadsave")[0].style.display = "none";
+
+							// HIDING THE RELOAD BUTTON
+							document.getElementsByClassName("gui_reload")[0].style.display = "none";
+							}
+						}
+						catch(err)
+						{
+						}
+					}
+
+				function fullscreenHandler()
+					{
+					try
+						{
+						// CHECKING IF THE GAME IS RUNNING IN FULLSCREEN
+						if((window.fullScreen) || (window.innerWidth == screen.width && window.innerHeight == screen.height))
+							{
+							// GOING BACK TO WINDOW MODE
+							document.exitFullscreen();
+
+							// NO POINT GOING ANY FURTHER
+							return;
+							}
+
+						// SETTING THE ELEMENT THAT WILL BE PRESENTED IN FULLSCREEN
+						var elem = document.getElementsByTagName("body")[0];
+
+						// CHECKING IF THERE IS A REQUESTFULLSCREEN
+						if (elem.requestFullscreen)
+							{
+							// REQUESTING FULLSCREEN
+							elem.requestFullscreen();
+							}
+						else if (elem.webkitRequestFullscreen) // SAFARI
+							{
+							// REQUESTING FULLSCREEN
+							elem.webkitRequestFullscreen();
+							}
+						else if (elem.msRequestFullscreen) // IE11
+							{
+							// REQUESTING FULLSCREEN
+							elem.msRequestFullscreen();
+							}
+						}
+						catch(err)
+						{
+						}
+					}
+
+				window.addEventListener("load", function()
+					{
+					// CHECKING IF THE EMULATOR IS NOT RUNNING WITHIN AN IFRAME
+					if (window.top == window.self)
+						{
+						// CLEARING THE SELECTED FILE VALUE
+						document.getElementById("gui_controls_file").value = null;
+
+						// CHECKING IF THE SOUND IS ENABLED
+						if (GAME_SOUND_ENABLED==true)
+							{
+							// SHOWING THE ENABLED SOUND ICON
+							document.getElementById("gui_sound_handler").className = "gui_sound_on";
+							}
+							else
+							{
+							// SHOWING THE DISABLED SOUND ICON
+							document.getElementById("gui_sound_handler").className = "gui_sound_off";
+							}
+
+						// SETTING WHAT WILL HAPPEN WHEN THE USER CLICKS ON THE UPLOAD ICON
+						document.getElementsByClassName("gui_upload")[0].addEventListener("click",function(event){document.getElementById("gui_controls_file").click()});
+
+						// KEEPING TRACK OF MOUSE CLICKS AND MOVEMENTS WHEN PLAYING IN ORDER TO KNOW WHEN TO HIDE/SHOW ALL THE ICONS
+						setInterval(goBackButtonTimerIncrement, 1000);
+
+						// SETTING THE TITLES FOR EACH BUTTON
+						document.getElementsByClassName("gui_upload")[0].title = STRING_SELECTGAME;
+						document.getElementsByClassName("gui_fullscreen")[0].title = STRING_FULLSCREEN;
+						document.getElementById("gui_sound_handler").title = STRING_SOUND;
+						document.getElementsByClassName("gui_download")[0].title = STRING_SAVESTATE;
+						document.getElementsByClassName("gui_uploadsave")[0].title = STRING_LOADSTATE;
+						document.getElementsByClassName("gui_reload")[0].title = STRING_RELOAD;
+
+						// SETTING FUNCTIONS THAT WILL BE CALLED WHEN THE USER CLICKS, DOUBLE CLICKS OR MOVES THE MOUSE IN ORDER TO SHOW THE SYSTEM ICONS
+						document.addEventListener("click", goBackButtonResetIncrement, false);
+						document.addEventListener("dblclick", goBackButtonResetIncrement, false);
+						document.addEventListener("mousemove", goBackButtonResetIncrement, false);
+
+						// PREVENTING TO SHOW THE EMULATOR MENU
+						document.addEventListener("keydown",function(e){detectEmulatorKey(e)});
+						document.addEventListener("keypress",function(e){detectEmulatorKey(e)});
+						document.addEventListener("keyup", function(e){detectEmulatorKey(e)});
+
+						// SETTING WHAT WILL HAPPEN WHEN THE USER CLICKS ON A ITEM
+						document.getElementsByClassName("gui_fullscreen")[0].addEventListener("click",function(event){fullscreenHandler()});
+						document.getElementById("gui_sound_handler").addEventListener("click",function(event){toggleSound()});
+						document.getElementsByClassName("gui_download")[0].addEventListener("click",function(event){saveState()});
+						document.getElementsByClassName("gui_uploadsave")[0].addEventListener("click",function(event){loadState()});
+						document.getElementsByClassName("gui_reload")[0].addEventListener("click",function(event){reloadGame()});
+						}
+					});
+
+			var script = document.createElement("script");
+			script.src = "Nintendo64.js";
+			document.getElementsByTagName("head")[0].appendChild(script);
+		</script>
+	</body>
+</html>
