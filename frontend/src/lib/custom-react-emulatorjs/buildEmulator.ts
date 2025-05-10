@@ -6,31 +6,36 @@ type Params = {
   height?: number
 }
 
+// Export this type for EmulatorJS.tsx to use
+export type EmulatorArtifacts = {
+  gameHostElement: HTMLDivElement
+  scriptToLoad: string
+}
+
 export const buildEmulator = ({
   loader,
   width = defaultSize.width,
   height = defaultSize.height,
-}: Params) => {
-  const html = document.createElement("html")
-  html.innerHTML = `
-<html>
-  <head>
-    <style>body, html { margin: 0; padding: 0; }</style>
-  </head>
-  <body>
-    <div style="width: ${width}px; height: ${height}px; max-width: 100%">   
-      <div id="game"></div>
-    </div>
-    <script>
-      setTimeout(() => {
-        let script = document.createElement("script");
-        script.src = "${loader}";
-        document.body.append(script);        
-      }, 200)
-    </script>
-  </body>
-</html>
-`
+}: Params): EmulatorArtifacts => {
+  const gameHostElement = document.createElement("div")
+  // Apply styles that were previously on the outer div in the iframe body
+  gameHostElement.style.width = `${width}px`
+  gameHostElement.style.height = `${height}px`
+  gameHostElement.style.maxWidth = "100%"
+  // Note: The style "body, html { margin: 0; padding: 0; }" from the original iframe
+  // is not applied here directly. If needed, it could be applied to this element
+  // or its parent in EmulatorJS.tsx.
 
-  return html
+  const gameDiv = document.createElement("div")
+  gameDiv.id = "game"
+  // To ensure gameDiv fills gameHostElement if desired (optional, depends on emulator's CSS)
+  // gameDiv.style.width = "100%";
+  // gameDiv.style.height = "100%";
+
+  gameHostElement.appendChild(gameDiv)
+
+  return {
+    gameHostElement,
+    scriptToLoad: loader,
+  }
 }

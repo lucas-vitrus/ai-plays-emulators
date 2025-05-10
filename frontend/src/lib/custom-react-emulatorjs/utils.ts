@@ -1,5 +1,6 @@
 import { defaultBiosesUrls } from "./defaultBiosesUrls"
 import { platforms } from "./platforms"
+//@ts-ignore
 import { Bios, BiosesUrls, EJS_core } from "./types"
 
 export const getPlatforms = (biosesUrls: BiosesUrls = defaultBiosesUrls) => {

@@ -1,62 +1,32 @@
-import { ConfigProvider, theme, Button } from "antd";
+import React, { useRef } from "react";
+import { ConfigProvider, theme, Button, notification } from "antd";
 import N64Emulator from "./environments/N64Emulator";
+import type { N64EmulatorRef } from "./environments/N64Emulator";
 import ShowCursor from "./components/ShowCursor";
+
+// The global Window interface for EJS_emulator is now in N64Emulator.tsx
+// declare global {
+//   interface Window {
+//     EJS_emulator?: {
+//       screenshot: () => void;
+//     };
+//   }
+// }
 
 const { darkAlgorithm } = theme;
 
 function App() {
-  const handleScreenshot = () => {
-    const containerDiv = document.getElementById("emulator-component");
-    let canvas: HTMLCanvasElement | null = null;
+  const emulatorRef = useRef<N64EmulatorRef>(null);
 
-    if (containerDiv) {
-      // Try to find a canvas with the specific class '.ejs_canvas' inside the container
-      const specificCanvas =
-        containerDiv.querySelector<HTMLCanvasElement>(".ejs_canvas");
-      if (specificCanvas instanceof HTMLCanvasElement) {
-        canvas = specificCanvas;
-      } else {
-        // If not found, or if it wasn't a canvas, try to find any generic canvas element inside the container
-        const genericCanvas =
-          containerDiv.querySelector<HTMLCanvasElement>("canvas");
-        if (genericCanvas instanceof HTMLCanvasElement) {
-          canvas = genericCanvas;
-        }
-      }
-    }
-
-    if (canvas) {
-      // If a canvas was successfully found and verified
-      try {
-        const imageURL = canvas.toDataURL("image/png");
-        const a = document.createElement("a");
-        a.href = imageURL;
-        a.download = "n64-screenshot.png";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } catch (error) {
-        console.error("Error taking screenshot:", error);
-        alert(
-          "Could not take screenshot. The canvas might be tainted by cross-origin data."
-        );
-      }
-    } else if (containerDiv) {
-      // Container was found, but no suitable canvas inside
-      console.warn(
-        "N64 canvas not found inside '#emulator-component' for screenshot."
-      );
-      alert(
-        "Could not find the N64 screen canvas within the emulator component."
-      );
+  const handleScreenshot = async () => {
+    if (emulatorRef.current) {
+      emulatorRef.current.triggerScreenshot();
     } else {
-      // Container element with ID 'emulator-component' was not found
-      console.warn(
-        "Element with ID 'emulator-component' not found for screenshot."
-      );
-      alert(
-        "Could not find the emulator component (ID: emulator-component) to capture."
-      );
+      console.warn("N64Emulator ref not available. Screenshot attempt failed.");
+      notification.warning({
+        message: "Screenshot Unavailable",
+        description: "The emulator component is not yet ready. Please try again shortly.",
+      });
     }
   };
 
@@ -77,7 +47,7 @@ function App() {
         }}
       >
         <ShowCursor label="Human" hideCursor={true} />
-        <N64Emulator />
+        <N64Emulator ref={emulatorRef} />
         <div className="absolute bottom-4 left-4 flex items-center space-x-4">
           <p className="text-sm text-gray-400">aiN64</p>
           <Button
