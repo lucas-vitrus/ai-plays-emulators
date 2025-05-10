@@ -44,21 +44,24 @@ const N64Emulator = forwardRef<N64EmulatorRef, {}>((props, ref) => {
 
       const canvas = document.querySelector(".ejs_canvas") as HTMLCanvasElement;
       if (canvas) {
-        try {
-          const dataURL = canvas.toDataURL("image/png");
-          console.log("Screenshot taken from canvas. Data URL:", dataURL);
-          // Here you can, for example, trigger a download or send the dataURL
-          // to a server or parent component.
-          // Example:
-          const link = document.createElement("a");
-          link.download = "screenshot.png";
-          link.href = dataURL;
-          document.body.appendChild(link); // Required for Firefox
-          link.click();
-          document.body.removeChild(link);
-        } catch (error) {
-          console.error("Error taking screenshot from canvas:", error);
-        }
+        requestAnimationFrame(() => {
+          // It might even be beneficial to wait for two frames for WebGL contexts
+          // requestAnimationFrame(() => {
+          try {
+            const dataURL = canvas.toDataURL("image/png");
+            console.log("Screenshot taken from canvas. Data URL:", dataURL);
+
+            const link = document.createElement("a");
+            link.download = "screenshot.png";
+            link.href = dataURL;
+            document.body.appendChild(link); // Required for Firefox
+            link.click();
+            document.body.removeChild(link);
+          } catch (error) {
+            console.error("Error taking screenshot from canvas:", error);
+          }
+          // });
+        });
       } else {
         console.warn(
           "ejs_canvas not found. Attempting fallback screenshot methods."

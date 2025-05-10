@@ -25,7 +25,8 @@ function App() {
       console.warn("N64Emulator ref not available. Screenshot attempt failed.");
       notification.warning({
         message: "Screenshot Unavailable",
-        description: "The emulator component is not yet ready. Please try again shortly.",
+        description:
+          "The emulator component is not yet ready. Please try again shortly.",
       });
     }
   };
