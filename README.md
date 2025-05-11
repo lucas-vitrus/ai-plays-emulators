@@ -1,4 +1,6 @@
-# AI Plays N64
+# AI Plays Nintendo 64
+
+<img width="1726" alt="image" src="https://github.com/user-attachments/assets/08be59cc-37c8-4169-8b2a-a99ab1e0b570" />
 
 This project is an attempt to create an AI that can play Nintendo 64 games.
 It uses Bun for the runtime, Vite and React for the frontend, and a Bun server for the backend.
