@@ -13,7 +13,7 @@ import {
   PlayCircleOutlined,
   StopOutlined,
 } from "@ant-design/icons";
-
+import ShowCursor from "./components/ShowCursor";
 import N64Emulator from "./environments/N64Emulator";
 import type { N64EmulatorRef } from "./environments/N64Emulator";
 import Console3D from "./components/Console3D";
@@ -155,8 +155,16 @@ function App() {
       value: number,
       duration: number = 200
     ) => {
+      console.log("pressButton called", player, controlNameInput, value, duration);
+      addServerLog(
+        `Frontend: pressButton called. Player: ${player}, Control: ${controlNameInput}, Value: ${value}, Duration: ${duration}`,
+        "client_rx_debug",
+        "DEBUG"
+      );
+
       const controlKey = controlNameInput.toUpperCase();
       const control = N64_CONTROL_MAP[controlKey];
+      console.log("control", control);
       if (control === undefined) {
         const errorMsg = `App: Unknown control: ${controlKey} (original: ${controlNameInput})`;
         addServerLog(errorMsg, "error", "ERROR");
@@ -301,6 +309,8 @@ function App() {
       };
 
       ws.onmessage = (event) => {
+        console.log("[WebSocket RX Raw]:", event.data.toString()); // Log all raw messages to browser console
+
         const rawMessage = event.data.toString();
         let messageForLog = `[RX] Server: ${rawMessage}`;
         let msgType: ServerLogMessage["type"] = "server";
@@ -314,8 +324,6 @@ function App() {
             case "REQUEST_SCREENSHOT":
               if (parsed.commandId) {
                 requestScreenshotCapture(parsed.commandId);
-                msgType = "server";
-                msgLevel = "DEBUG";
               } else {
                 messageForLog =
                   "[RX] (Error) Srv: REQUEST_SCREENSHOT missing commandId.";
@@ -324,10 +332,13 @@ function App() {
               break;
             case "PRESS_BUTTON":
               if (parsed.payload) {
-                const { player, button, duration } = parsed.payload;
-                pressButton(player, button, 1, duration || 200);
-                msgType = "server";
-                msgLevel = "DEBUG";
+                const { button } = parsed.payload;
+                addServerLog(
+                  `Frontend: Received PRESS_BUTTON from server. Button: ${button}, Player: ${0}, Duration: 200`,
+                  "server",
+                  "DEBUG"
+                );
+                pressButton(0, button, 1, 200);
               } else {
                 messageForLog =
                   "[RX] (Error) Srv: PRESS_BUTTON missing payload.";
@@ -350,6 +361,20 @@ function App() {
                 msgLevel = "ERROR";
               }
               return; // Handled specific logging above
+            case "AI_DESCRIPTION":
+              if (parsed.payload?.description) {
+                addServerLog(
+                  `[👀] AI Description: ${parsed.payload.description}`,
+                  "info",
+                  "DEBUG"
+                );
+                return; // Prevent generic log for this specific action
+              } else {
+                messageForLog =
+                  "[RX] (Error) Srv: AI_DESCRIPTION missing payload.description.";
+                msgLevel = "ERROR";
+              }
+              break;
             case "INFO":
               messageForLog = `[RX] Server Info: ${parsed.payload}`;
               msgType = "info";
@@ -364,6 +389,20 @@ function App() {
               messageForLog = `[RX] Server Error: ${parsed.payload}`;
               msgType = "error";
               msgLevel = "ERROR";
+              break;
+            case "AI_STATUS_UPDATE":
+              if (parsed.payload?.status) {
+                addServerLog(
+                  `[⏳] AI: ${parsed.payload.status}`,
+                  "info",
+                  "DEBUG"
+                );
+                return;
+              } else {
+                messageForLog =
+                  "[RX] (Error) Srv: AI_STATUS_UPDATE missing payload.status.";
+                msgLevel = "ERROR";
+              }
               break;
             default:
               messageForLog = `[RX] Server (Unknown Type): ${JSON.stringify(
@@ -449,9 +488,12 @@ function App() {
         />
         <div className="absolute top-6 left-0 w-full flex justify-center items-center z-20">
           {aiPlayerName && (
-            <h1 className="text-white text-3xl">
-              AI Player: {aiPlayerName} Active
-            </h1>
+            <div className="text-center">
+              <h1 className="text-white text-3xl flex items-center justify-center gap-2">
+                <pre>{aiPlayerName}</pre>{" "}
+                <span className="opacity-50">playing</span>
+              </h1>
+            </div>
           )}
         </div>
         <ServerLogsDisplay logs={serverLogs} />
@@ -514,6 +556,8 @@ function App() {
             </p>
           </div>
         </div>
+
+        <ShowCursor label="Human" hideCursor={true} />
       </div>
       {/* <Drawer title="Controls & Info" placement="left" onClose={onCloseDrawer} visible={drawerVisible}></Drawer> */}
     </ConfigProvider>

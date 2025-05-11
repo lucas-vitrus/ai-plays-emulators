@@ -1,4 +1,5 @@
-import { Player } from "./player";
+import { Player } from "./players/player_1";
+import type { AIAction } from "./players/player_1"; // Corrected AIAction import
 import type { ServerWebSocket } from "bun"; // Use ServerWebSocket directly
 
 // Define a type for the data associated with each WebSocket connection by Bun
@@ -23,7 +24,7 @@ Bun.serve({
   },
   websocket: {
     message(ws, message) {
-      console.log(`Received message: ${message}`);
+      // console.log(`Received message: ${message}`); // Will be replaced by conditional logging
       let parsedMessage: any;
       try {
         parsedMessage = JSON.parse(message.toString());
@@ -33,6 +34,15 @@ Bun.serve({
         return;
       }
 
+      // Conditional logging to avoid printing base64 screenshot data
+      if (parsedMessage.type === "SCREENSHOT_RESPONSE" && parsedMessage.commandId) {
+        console.log(`Received SCREENSHOT_RESPONSE for commandId: ${parsedMessage.commandId} (data omitted)`);
+      } else {
+        // For other message types, log the parsed content for debugging.
+        // Be mindful if other types might also contain very large data in the future.
+        console.log(`Received message: ${JSON.stringify(parsedMessage)}`);
+      }
+
       const typedWs = ws as ServerWebSocket<WebSocketContext>;
       const player = activePlayers.get(typedWs);
 
@@ -40,7 +50,7 @@ Bun.serve({
         case "BEGIN_PLAY":
           if (!player) {
             console.log("BEGIN_PLAY received. Creating new player.");
-            const playerName = "Gemini"; // Define player name
+            const playerName = "vP-01"; // Define player name
             const newPlayer = new Player(
               playerName, // Pass name to constructor
               // requestScreenshotFn
@@ -53,7 +63,7 @@ Bun.serve({
                 }
               },
               // sendCommandFn
-              (action: any) => {
+              (action: AIAction) => {
                 if (ws.readyState === WebSocket.OPEN) {
                   ws.send(JSON.stringify(action));
                   console.log(`Server: Sent command to player '${playerName}':`, action);
@@ -66,15 +76,15 @@ Bun.serve({
             newPlayer.start(); // Player starts its internal loop
 
             // Inform frontend that player has started and its name
-            ws.send(JSON.stringify({ 
-              type: "PLAYER_INIT", 
-              payload: { 
-                playerName: newPlayer.getName(), 
-                message: `Player '${newPlayer.getName()}' has started.` 
+            ws.send(JSON.stringify({
+              type: "PLAYER_INIT",
+              payload: {
+                playerName: newPlayer.getName(),
+                message: `Player '${newPlayer.getName()}' has started.`
               }
             }));
             // Also send the older general info message for compatibility or general logging
-            // ws.send(JSON.stringify({ type: "INFO", payload: "Player started." }));
+            ws.send(JSON.stringify({ type: "INFO", payload: "Player started." }));
           } else {
             console.log("Player already active for this connection.");
             ws.send(JSON.stringify({ type: "WARN", payload: "Player already active." }));
@@ -95,7 +105,8 @@ Bun.serve({
         case "SCREENSHOT_RESPONSE":
           if (player) {
             if (parsedMessage.commandId && typeof parsedMessage.data === 'string') {
-              console.log(`SCREENSHOT_RESPONSE for commandId: ${parsedMessage.commandId}`);
+              // This log is fine as it doesn't print the data itself.
+              console.log(`Processing SCREENSHOT_RESPONSE for commandId: ${parsedMessage.commandId}`);
               player.handleScreenshotResponse(parsedMessage.commandId, parsedMessage.data);
             } else {
               console.warn("SCREENSHOT_RESPONSE missing commandId or data string:", parsedMessage);
