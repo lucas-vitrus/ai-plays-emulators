@@ -7,6 +7,7 @@ import React, { useRef, useState, useEffect, useCallback } from "react";
 // --- Ant Design Imports ---
 import { ConfigProvider, theme, Button, Dropdown, Input, Space } from "antd";
 import { GlobalOutlined } from "@ant-design/icons";
+import { FaGithub } from "react-icons/fa";
 
 // --- Local Imports ---
 import ShowCursor from "./components/ShowCursor";
@@ -99,8 +100,8 @@ function App() {
         addLog(
           `🌍 Vitrus instance configured. API Key: ${currentApiKey.substring(
             0,
-            5
-          )}..., World ID: ${currentWorldId}`
+            8
+          )}..., World ID: ${currentWorldId.substring(0, 6)}...`
         );
       } else {
         // Optional: Log that credentials haven't changed, so instance is reused.
@@ -275,8 +276,8 @@ function App() {
     addLog(
       `🚀 Confirming new connection settings. API Key: ${inputApiKey.substring(
         0,
-        5
-      )}..., World ID: ${inputWorldId}`
+        8
+      )}..., World ID: ${inputWorldId.substring(0, 6)}...`
     );
     if (!inputApiKey.trim() || !inputWorldId.trim()) {
       addLog("⚠️ API Key and World ID are required.");
@@ -332,7 +333,8 @@ function App() {
   return (
     <ConfigProvider theme={{ algorithm: theme.darkAlgorithm }}>
       <div className="p-0 bg-[#211293] text-white h-screen w-screen relative overflow-hidden">
-        <div className="absolute top-6 right-6 z-30">
+        {/* Top Left: Connection Dropdown and AI Player Name */}
+        <div className="absolute top-6 left-6 z-30 flex flex-col items-start space-y-2">
           <Dropdown
             overlay={connectionDropdownMenu}
             trigger={["click"]}
@@ -361,12 +363,13 @@ function App() {
               </Button>
             )}
           </Dropdown>
-        </div>
-
-        <div className="absolute top-6 left-0 w-full flex justify-center items-center z-20">
           {aiPlayerName && (
-            <div className="text-center">
-              <h1 className="text-white text-3xl flex items-center justify-center gap-2">
+            <div className="text-left">
+              {" "}
+              {/* Adjusted for left alignment */}
+              <h1 className="text-white text-3xl flex items-center justify-start gap-2">
+                {" "}
+                {/* Adjusted for left alignment */}
                 <pre>{aiPlayerName}</pre>{" "}
                 <span className="opacity-50">playing</span>
               </h1>
@@ -374,12 +377,31 @@ function App() {
           )}
         </div>
 
+        {/* Top Right: GitHub Button */}
+        <div className="absolute top-6 right-6 z-30">
+          <Button
+            href="https://github.com/lucas-vitrus/ai-plays-emulators" // User updated URL
+            target="_blank"
+            rel="noopener noreferrer"
+            shape="circle"
+            type="text"
+            icon={<FaGithub className="text-black text-xl" size={40} />} // User updated style
+            size="large"
+            style={{ color: "white" }} // User updated style
+            className="opacity-20 hover:opacity-100" // User updated style
+            aria-label="View source on GitHub"
+          />
+        </div>
+
+        {/* Player logs */}
         <ServerLogsDisplay logs={serverLogs} />
+
         <MemoizedEmulatorDisplay emulatorRef={emulatorRef} />
         <div className="absolute bottom-0 left-0 w-[100%] h-[30%] z-1">
           <Console3D />
         </div>
-        <div className="absolute bottom-4 left-4 flex items-center space-x-2 z-20 w-fit">
+        {/* Bottom Center: N64Controller */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center space-x-2 z-20 w-fit">
           {/* <Button
             type="default"
             icon={<CameraOutlined />}
@@ -393,14 +415,14 @@ function App() {
         <div className="z-0 text-sm text-gray-400 absolute bottom-4 right-4 flex items-end justify-end gap-2">
           <div className="flex items-end justify-end gap-4">
             <p>
-              AI Actor from{" "}
+              AI Orchestrator from{" "}
               <a
                 className="text-white"
                 href="https://sketchfab.com/3d-models/nintendo-64-816d53eca00e4f3192a8d23f62388472"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Vitrus SDK
+                Vitrus
               </a>
             </p>
 

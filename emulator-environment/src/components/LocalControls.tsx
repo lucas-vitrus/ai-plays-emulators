@@ -314,27 +314,25 @@ const N64Controller: React.FC<LocalControlsProps> = ({ onClickButton }) => {
           </div>
         }
         placement="bottom"
-        className="overflow-hidden w-fit"
         closable={true}
         onClose={closeDrawer}
         open={isDrawerOpen}
         mask={false}
         height={480} // Adjusted height
-        width={800}
-        getContainer={false} // Optional: to render drawer inline if needed, usually not for bottom drawers
         styles={{
           content: {
             backgroundColor: "#333333aa",
             width: "600px",
             backdropFilter: "blur(10px)",
+            marginLeft: "auto",
+            marginRight: "auto",
           },
           header: {
-            // Ensure header also has a similar background if needed, or adjust as per overall theme
-            backgroundColor: "#333333aa", // Or your preferred header background
-            borderBottom: "1px solid #444444", // Optional: a subtle border
+            backgroundColor: "#333333aa",
+            borderBottom: "1px solid #444444",
           },
           body: {
-            padding: 0, // Remove padding if N64ControllerLayout handles it
+            padding: 0,
           },
         }}
       >

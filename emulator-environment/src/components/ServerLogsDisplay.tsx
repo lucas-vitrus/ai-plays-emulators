@@ -38,7 +38,7 @@ const ServerLogsDisplay: React.FC<ServerLogsDisplayProps> = ({
   }, [logs]);
 
   const defaultClasses =
-    "absolute top-10 left-10 w-full md:w-1/3 h-screen bg-black bg-opacity-60 p-2 z-0 overflow-y-auto text-xs font-mono overscroll-contain";
+    "absolute top-20 left-6 w-full md:w-1/3 h-screen bg-black bg-opacity-60 p-2 z-0 overflow-y-auto text-xs font-mono overscroll-contain";
 
   return (
     <div

@@ -21,7 +21,7 @@
         "react-icons": "^5.5.0",
         "tailwindcss": "^4.1.6",
         "three": "^0.176.0",
-        "vitrus": "^0.2.1",
+        "vitrus": "^0.2.3",
         "zustand": "^5.0.4",
       },
       "devDependencies": {
@@ -988,7 +988,7 @@
 
     "vite": ["vite@6.3.5", "", { "dependencies": { "esbuild": "^0.25.0", "fdir": "^6.4.4", "picomatch": "^4.0.2", "postcss": "^8.5.3", "rollup": "^4.34.9", "tinyglobby": "^0.2.13" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^18.0.0 || ^20.0.0 || >=22.0.0", "jiti": ">=1.21.0", "less": "*", "lightningcss": "^1.21.0", "sass": "*", "sass-embedded": "*", "stylus": "*", "sugarss": "*", "terser": "^5.16.0", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["@types/node", "jiti", "less", "lightningcss", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "yaml"], "bin": { "vite": "bin/vite.js" } }, "sha512-cZn6NDFE7wdTpINgs++ZJ4N49W2vRp8LCKrn3Ob1kYNtOo21vfDoaV5GzBfLU4MovSAB8uNRm4jgzVQZ+mBzPQ=="],
 
-    "vitrus": ["vitrus@0.2.1", "", {}, "sha512-1BulsXQcrzgdUZIK+iSsy2Cbuh67aWtHTeWRzwNfnn+B6/lSd6AHBCmX7/HeH0KtGkdXM6LO65c+/bntz4SsCw=="],
+    "vitrus": ["vitrus@0.2.3", "", {}, "sha512-5BE7D6Ohdr6h5UZG9zQ4F6r/SQNX7vKmu6K+KXmF50B5BP7AKwtyIFMPit/XLGyF5UgmjzqpGo6CWdsm2FP4/g=="],
 
     "webcrypto-core": ["webcrypto-core@1.8.1", "", { "dependencies": { "@peculiar/asn1-schema": "^2.3.13", "@peculiar/json-schema": "^1.1.12", "asn1js": "^3.0.5", "pvtsutils": "^1.3.5", "tslib": "^2.7.0" } }, "sha512-P+x1MvlNCXlKbLSOY4cYrdreqPG5hbzkmawbcXLKN/mf6DZW0SdNNkZ+sjwsqVkI4A4Ko2sPZmkZtCKY58w83A=="],
 
