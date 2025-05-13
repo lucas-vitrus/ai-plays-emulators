@@ -3,7 +3,7 @@
 
 import React, { useState } from "react";
 import { Drawer, Button as AntButton, Switch } from "antd"; // Re-introducing AntButton for the trigger and Switch for dev mode
-import { PiJoystick } from "react-icons/pi";
+import { PiGameController, PiJoystick } from "react-icons/pi";
 import { getN64KeyCode, isSpecialKey, analogInput } from "../controlMap"; // Added import
 
 interface LocalControlsProps {
@@ -293,8 +293,18 @@ const N64Controller: React.FC<LocalControlsProps> = ({ onClickButton }) => {
   return (
     <>
       <div className="p-4 flex justify-center">
-        <AntButton onClick={showDrawer} icon={<PiJoystick />}>
-          Joypad
+        <AntButton
+          type="text"
+          onClick={showDrawer}
+          icon={<PiGameController />}
+          style={{
+            // backgroundColor: "rgba(255, 255, 255, 0.1)",
+            backdropFilter: "blur(10px)",
+            color: "white",
+          }}
+          className="hover:border-2 hover:border-white hover:text-black"
+        >
+          Gamepad
         </AntButton>
       </div>
       <Drawer

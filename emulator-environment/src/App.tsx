@@ -14,6 +14,7 @@ import ShowCursor from "./components/ShowCursor";
 import N64Emulator from "./environments/N64Emulator";
 import type { N64EmulatorRef } from "./environments/N64Emulator";
 import N64Controller from "./components/LocalControls";
+import Footer from "./components/Footer";
 
 import ServerLogsDisplay from "./components/ServerLogsDisplay";
 import type { ServerLogMessage } from "./types";
@@ -412,44 +413,7 @@ function App() {
           <N64Controller onClickButton={() => {}} />
         </div>
 
-        <div className="z-0 text-sm text-gray-400 absolute bottom-4 right-4 flex items-end justify-end gap-2">
-          <div className="flex items-end justify-end gap-4">
-            <p>
-              AI Orchestrator from{" "}
-              <a
-                className="text-white"
-                href="https://sketchfab.com/3d-models/nintendo-64-816d53eca00e4f3192a8d23f62388472"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Vitrus
-              </a>
-            </p>
-
-            <p>
-              Built on top of{" "}
-              <a
-                className="text-white"
-                href="https://emulatorjs.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                EmulatorJS
-              </a>
-            </p>
-            <p>
-              N64 model from{" "}
-              <a
-                className="text-white"
-                href="https://sketchfab.com/3d-models/nintendo-64-816d53eca00e4f3192a8d23f62388472"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                @ethanboor
-              </a>
-            </p>
-          </div>
-        </div>
+        <Footer />
 
         <ShowCursor label="Human" hideCursor={true} />
       </div>
