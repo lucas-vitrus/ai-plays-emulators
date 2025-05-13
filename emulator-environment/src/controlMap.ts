@@ -55,3 +55,9 @@ export const getN64KeyCode = (controlName: string): number | undefined => {
   return N64_CONTROL_MAP[controlName];
 };
 
+const specialKeys = [16, 17, 18, 19, 20, 21, 22, 23];
+export const isSpecialKey = (key: number): boolean => {
+  return specialKeys.includes(key);
+};
+
+export const analogInput = 0x7fff;

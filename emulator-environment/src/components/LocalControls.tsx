@@ -4,7 +4,7 @@
 import React, { useState } from "react";
 import { Drawer, Button as AntButton } from "antd"; // Re-introducing AntButton for the trigger
 import { PiControl, PiJoystick } from "react-icons/pi";
-import { getN64KeyCode } from "../controlMap"; // Added import
+import { getN64KeyCode, isSpecialKey, analogInput } from "../controlMap"; // Added import
 
 interface LocalControlsProps {
   onClickButton: (key: string) => void;
@@ -18,7 +18,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
     const buttonCode = getN64KeyCode(key);
     const player = 0; // Assuming player 0 for local controls
     const pressDuration = 100; // Duration for the button press in ms
-
+    const inputValue = isSpecialKey(buttonCode || 0) ? analogInput : 1;
     if (buttonCode !== undefined) {
       if (
         (window as any).EJS_emulator &&
@@ -30,7 +30,8 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
         (window as any).EJS_emulator.gameManager.functions.simulateInput(
           player,
           buttonCode,
-          1 // Press the button
+          // 1 // Press the button
+          inputValue
         );
         console.log(
           `LocalControls: Player ${player} pressed UI button '${key}', code: ${buttonCode}.`
@@ -117,7 +118,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               role="button"
               tabIndex={0}
               className={`${mimeticButtonBase} ${dPadColors} w-10 h-10 focus:ring-neutral-500`}
-              onClick={() => handleButtonClick("LEFT_STICK_Y:+1")}
+              onClick={() => handleButtonClick("LEFT_STICK_Y:-1")}
             >
               ▲
             </div>
@@ -125,7 +126,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
             <div
               role="button"
               className={`${mimeticButtonBase} ${dPadColors} w-10 h-10 focus:ring-neutral-500`}
-              onClick={() => handleButtonClick("DPAD_LEFT")}
+              onClick={() => handleButtonClick("LEFT_STICK_X:-1")}
             >
               ◀
             </div>
@@ -134,7 +135,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
             <div
               role="button"
               className={`${mimeticButtonBase} ${dPadColors} w-10 h-10 focus:ring-neutral-500`}
-              onClick={() => handleButtonClick("DPAD_RIGHT")}
+              onClick={() => handleButtonClick("LEFT_STICK_X:+1")}
             >
               ▶
             </div>
@@ -142,7 +143,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
             <div
               role="button"
               className={`${mimeticButtonBase} ${dPadColors} w-10 h-10 focus:ring-neutral-500`}
-              onClick={() => handleButtonClick("LEFT_STICK_Y:-1")}
+              onClick={() => handleButtonClick("LEFT_STICK_Y:+1")}
             >
               ▼
             </div>
