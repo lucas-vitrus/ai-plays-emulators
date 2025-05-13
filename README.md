@@ -32,6 +32,7 @@ It uses Bun for the runtime, Vite and React for the frontend, and a Bun server f
     ```bash
     VITE_VITRUS_API_KEY = vitrus-<api-key>
     VITE_VITRUS_WORLD = <world-id>
+    ROM_URL = https://path/your_file_here.n64 #Your game of preference
     ```
     Alternativelly you may fork this repo and use a custom AwA layer like [Redis](https://redis.io/), [PeerJs](https://peerjs.com/), etc. But we've made Vitrus SDK to simplify this.
    
