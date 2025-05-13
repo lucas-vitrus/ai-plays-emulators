@@ -1,4 +1,4 @@
-# AI Plays Nintendo 64
+# AI plays Emulators (Nintendo 64, PSX)
 
 <img width="1726" alt="image" src="https://github.com/user-attachments/assets/08be59cc-37c8-4169-8b2a-a99ab1e0b570" />
 
@@ -7,37 +7,62 @@ It uses Bun for the runtime, Vite and React for the frontend, and a Bun server f
 
 ## Project Structure
 
-- `frontend/`: Contains the React frontend application (Vite + TS).
-- `backend/`: Contains the Bun backend server.
+- `emulator-environment/`: Contains the React frontend application using [EmulatorJS](https://emulatorjs.org/docs/getting-started).
+- `ai-player/`: Contains an example of an AI agent.
 
-## Getting Started
+## Getting Started in 3 steps
 
 1.  **Install dependencies for the entire monorepo:**
 
     ```bash
+    cd ./emulator-environment
     bun install
     ```
 
-2.  **Running the Frontend (Vite Development Server):**
-    Navigate to the `frontend` directory and run:
+2. Setup **Environment Variables**
+    To help developers focus only in the AI player development, we abstracted the ai-to-emulator communication using [Vitrus](https://github.com/vitrus-ai/vitrus-sdk) Agent-World-Actor (AwA) infrastructure.
+
+    🔑 You can get your [API Keys here](https://app.vitrus.ai). 
 
     ```bash
-    cd frontend
+    cd ./emulator-environment
+    touch .env
+    ```
+    And inside of the `.env` file define your credentials and API
+    ```bash
+    VITE_VITRUS_API_KEY = vitrus-<api-key>
+    VITE_VITRUS_WORLD = <world-id>
+    ```
+    Alternativelly you may fork this repo and use a custom AwA layer like [Redis](https://redis.io/), [PeerJs](https://peerjs.com/), etc. But we've made Vitrus SDK to simplify this.
+   
+3.  **Running the Frontend (Vite Development Server):**
+    Navigate to the `emulator-environment` directory and run:
+
+    ```bash
+    cd ./emulator-environment
     bun run dev
     ```
 
-    This will typically start the frontend on `http://localhost:5173`.
+    This will typically start the frontend on `http://localhost:5173`. You can defined the port by adding `--port 3000`.
 
-3.  **Running the Backend Server:**
-    Navigate to the `backend` directory and run:
+4. (optional) Running the example Player (typescript) 
     ```bash
-    cd backend
-    bun run dev
+    cd ./ai-player
+    bun install
+    touch .env
     ```
-    This will start the backend server, by default on `http://localhost:3001`.
 
-## Further Development
+    Add the same API Keys on `.env` but without the `VITE_` prefix.
+    ```bash
+    VITRUS_API_KEY = vitrus-<api-key>
+    VITRUS_WORLD = <world-id> #Make sure it's the same world as the emulator
+    ```
 
-- The frontend will host the N64 emulator (WASM).
-- The backend will manage AI workflows, game state, and potentially interact with the emulator via Puppeteer or direct JavaScript interop if the emulator allows.
-- Puppeteer will be used to control the web application hosting the emulator.
+   With the browser running, run the player
+    ```bash
+    bun dev
+    ```
+
+    It should play now!! 🎉
+    
+    
