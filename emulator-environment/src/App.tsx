@@ -108,7 +108,8 @@ function App() {
       }
     } else {
       // If credentials are not present, ensure Vitrus instance is null.
-      if (vitrusInstance !== null) { // Only update if it was previously not null to avoid unnecessary renders
+      if (vitrusInstance !== null) {
+        // Only update if it was previously not null to avoid unnecessary renders
         addLog(
           "⚠️ Vitrus API Key or World ID not provided. Clearing Vitrus instance."
         );
@@ -125,9 +126,7 @@ function App() {
 
     const connectAndSetActor = async () => {
       if (vitrusInstance) {
-        addLog(
-          "⏳ Attempting to connect Vitrus actor (instance available)..."
-        );
+        addLog("⏳ Attempting to connect Vitrus actor (instance available)...");
         try {
           const newActor = await vitrusInstance.actor("emulator", {});
           actorCreatedInThisEffect = newActor;
@@ -260,7 +259,9 @@ function App() {
 
       // Optional: Cleanup for listeners if actor.off or similar is available
       return () => {
-        addLog("🧹 Removing event listeners from the old actor instance (if applicable)...");
+        addLog(
+          "🧹 Removing event listeners from the old actor instance (if applicable)..."
+        );
         // If actor.off("event", handler) or actor.removeAllListeners() exists:
         // actor.off("init", ...);
         // actor.off("log", ...);
@@ -300,21 +301,21 @@ function App() {
   };
 
   const connectionDropdownMenu = (
-    <div className="p-4 bg-white dark:bg-neutral-800 shadow-lg rounded-md border border-gray-200 dark:border-neutral-700 w-80">
+    <div className="p-4 bg-neutral-700 shadow-lg rounded-md border border-gray-200 dark:border-neutral-700 w-80">
       <Space direction="vertical" style={{ width: "100%" }} size="middle">
         <Input
           addonBefore="API Key"
           placeholder="Enter VITRUS API KEY"
           value={inputApiKey}
           onChange={(e) => setInputApiKey(e.target.value)}
-          className="dark:bg-neutral-700 dark:text-white dark:placeholder-gray-400 dark:border-neutral-600"
+          className="bg-neutral-700 text-white placeholder-gray-400 border-neutral-600"
         />
         <Input
           addonBefore="World ID"
           placeholder="Enter World ID"
           value={inputWorldId}
           onChange={(e) => setInputWorldId(e.target.value)}
-          className="dark:bg-neutral-700 dark:text-white dark:placeholder-gray-400 dark:border-neutral-600"
+          className="bg-neutral-700 text-white placeholder-gray-400 border-neutral-600"
         />
         <Button
           type="primary"
