@@ -5,7 +5,7 @@ import path from "path";
 const vitrus = new Vitrus({
   apiKey: import.meta.env.VITRUS_API_KEY as string,
   world: import.meta.env.VITRUS_WORLD as string, // as we are using an actor, we need to define a world for it.
-  baseUrl: "ws://localhost:3333",
+  // baseUrl: "ws://localhost:3333",
   // debug: true,
 });
 

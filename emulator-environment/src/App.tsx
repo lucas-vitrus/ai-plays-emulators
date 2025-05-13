@@ -90,7 +90,7 @@ function App() {
         const newVitrus = new Vitrus({
           apiKey: currentApiKey,
           world: currentWorldId,
-          baseUrl: "ws://localhost:3333", // Ensure this is the correct base URL
+          // baseUrl: "ws://localhost:3333", // Ensure this is the correct base URL
           // debug: true, // Uncomment if needed
         });
         setVitrusInstance(newVitrus);
