@@ -254,13 +254,21 @@ const N64Controller: React.FC<LocalControlsProps> = ({ onClickButton }) => {
       <Drawer
         title="N64 Controls"
         placement="bottom"
-        className="overflow-hidden"
+        className="overflow-hidden w-fit"
         closable={true}
         onClose={closeDrawer}
         open={isDrawerOpen}
         mask={false}
         height={480} // Adjusted height
+        width={800}
         getContainer={false} // Optional: to render drawer inline if needed, usually not for bottom drawers
+        styles={{
+          content: {
+            backgroundColor: "#333333aa",
+            width: "600px",
+            backdropFilter: "blur(10px)",
+          },
+        }}
       >
         <N64ControllerLayout onClickButton={onClickButton} />
       </Drawer>

@@ -2,17 +2,16 @@
 import Vitrus from "vitrus";
 
 // --- React Imports ---
-import React, { useRef, useState, useCallback, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 
 // --- Ant Design Imports ---
-import { ConfigProvider, Button, notification, theme } from "antd";
-import { CameraOutlined, MenuOutlined } from "@ant-design/icons";
+import { ConfigProvider, theme } from "antd";
 
 // --- Local Imports ---
 import ShowCursor from "./components/ShowCursor";
 import N64Emulator from "./environments/N64Emulator";
 import type { N64EmulatorRef } from "./environments/N64Emulator";
-import { N64_CONTROL_MAP } from "./controlMap"; // Import the map
+// import { N64_CONTROL_MAP } from "./controlMap"; // Import the map
 import N64Controller from "./client/LocalControls";
 
 import ServerLogsDisplay from "./components/ServerLogsDisplay";
@@ -25,7 +24,7 @@ import Console3D from "./components/Console3D";
 const vitrus = new Vitrus({
   apiKey: import.meta.env.VITE_VITRUS_API_KEY,
   world: import.meta.env.VITE_VITRUS_WORLD, // as we are using an actor, we need to define a world for it.
-  debug: true,
+  // debug: true,
   baseUrl: "ws://localhost:3333",
 });
 
@@ -53,21 +52,69 @@ function App() {
   const emulatorRef = useRef<N64EmulatorRef>(null);
   const [serverLogs, setServerLogs] = useState<ServerLogMessage[]>([]);
   const [aiPlayerName, setAiPlayerName] = useState<string | null>(null);
+  const [actor, setActor] = useState<any>(null);
+
+  const addLog = (message: string) => {
+    setServerLogs((prevLogs) => [
+      ...prevLogs,
+      {
+        id: Date.now().toString(),
+        message,
+        level: "INFO",
+        timestamp: Date.now(),
+      },
+    ]);
+  };
+
+  const connectActor = async () => {
+    // This will register the actor in the world
+    const actor = await vitrus.actor("emulator", {});
+    setActor(actor);
+    addLog("🐸 Actor connected");
+  };
 
   // Connect to Vitrus Actor
   useEffect(() => {
-    const connectActor = async () => {
-      // This will register the actor in the world
-      const actor = await vitrus.actor("emulator", { something: "something" });
-      console.log("actor", actor);
-
-      actor.on("log", (message: string) => {
-        console.log(message);
-      });
-    };
     connectActor();
+    return () => {
+      if (actor) {
+        actor.disconnect();
+      }
+    };
   }, []);
 
+  useEffect(() => {
+    if (actor) {
+      actor.on("init", (config: any) => {
+        console.log("Actor initialized with config:", config);
+        addLog(JSON.stringify(args));
+        return true;
+      });
+
+      actor.on("log", (args: any) => {
+        console.log(args);
+        addLog(JSON.stringify(args));
+        return true;
+      });
+
+      actor.on("screenshot", async () => {
+        addLog("📸 Screenshot requested (base64)");
+        const screenshot = await emulatorRef.current?.getBase64Screenshot();
+        console.log(
+          "screenshot (base64)",
+          screenshot?.substring(0, 50) + "..."
+        );
+        return screenshot;
+      });
+
+      actor.on("press_button", (button: string) => {
+        console.log(button);
+        addLog(`🕹️ ${button} pressed`);
+
+        return true;
+      });
+    }
+  }, [actor]);
   /*
 .EJS_emulator.gameManager.functions.simulateInput(
                   player,
@@ -93,7 +140,7 @@ function App() {
         <div className="absolute bottom-0 left-0 w-[100%] h-[30%] z-1">
           <Console3D />
         </div>
-        <div className="absolute bottom-4 left-4 flex items-center space-x-2 z-20">
+        <div className="absolute bottom-4 left-4 flex items-center space-x-2 z-20 w-fit">
           {/* <Button
             type="default"
             icon={<CameraOutlined />}
@@ -101,7 +148,7 @@ function App() {
           >
             Screenshot
           </Button> */}
-          {/* <N64Controller onClickButton={handleN64ControllerClick} /> */}
+          <N64Controller onClickButton={() => {}} />
         </div>
 
         <div className="z-0 text-sm text-gray-400 absolute bottom-4 right-4 flex items-end justify-end gap-2">

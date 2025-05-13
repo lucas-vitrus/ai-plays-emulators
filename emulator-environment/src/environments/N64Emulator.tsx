@@ -12,11 +12,14 @@ declare global {
 
 export interface N64EmulatorRef {
   triggerScreenshot: (commandId?: string) => void;
+  getBase64Screenshot: () => Promise<string | null>;
 }
 
 interface N64EmulatorProps {
   onScreenshot?: (base64Data: string, commandId?: string) => void;
 }
+
+const rom = import.meta.env.VITE_ROM_URL;
 
 const N64Emulator = forwardRef<N64EmulatorRef, N64EmulatorProps>(
   (props, ref) => {
@@ -190,13 +193,40 @@ const N64Emulator = forwardRef<N64EmulatorRef, N64EmulatorProps>(
               handleFallbackScreenshot(commandId);
             }
           },
+          getBase64Screenshot: async (): Promise<string | null> => {
+            if (!isGameStarted) {
+              console.warn("Cannot take screenshot. Game has not started yet.");
+              return null;
+            }
+            const canvas = document.querySelector(
+              ".ejs_canvas"
+            ) as HTMLCanvasElement;
+            if (canvas) {
+              return new Promise((resolve) => {
+                requestAnimationFrame(() => {
+                  requestAnimationFrame(() => {
+                    try {
+                      const dataURL = canvas.toDataURL("image/png");
+                      resolve(dataURL);
+                    } catch (error) {
+                      console.error(
+                        "Error during getBase64Screenshot canvas capture:",
+                        error
+                      );
+                      resolve(null);
+                    }
+                  });
+                });
+              });
+            } else {
+              console.warn("ejs_canvas not found for getBase64Screenshot.");
+              return null;
+            }
+          },
         };
       },
       [isGameStarted, props.onScreenshot]
     );
-
-    const rom =
-      "https://rpuqlzpbhnfjvmauvgiz.supabase.co/storage/v1/object/public/roms//The%20Legend%20of%20Zelda%20-%20Ocarina%20of%20Time.z64";
 
     return (
       <div className="w-full h-full flex flex-col items-center justify-center">
