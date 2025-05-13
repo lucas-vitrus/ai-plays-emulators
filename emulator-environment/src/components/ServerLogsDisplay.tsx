@@ -2,7 +2,7 @@
 // This component is responsible for displaying server-side logs in a terminal-like view.
 
 import React, { useEffect, useRef } from "react";
-import type { ServerLogMessage } from "../types/gun";
+import type { ServerLogMessage } from "../types";
 
 interface ServerLogsDisplayProps {
   logs: ServerLogMessage[];
