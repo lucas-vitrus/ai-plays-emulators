@@ -2,7 +2,7 @@
 // This file contains the LocalControls component, which renders a mock Nintendo 64 controller accessible via a drawer.
 
 import React, { useState } from "react";
-import { Drawer, Button as AntButton } from "antd"; // Re-introducing AntButton for the trigger
+import { Drawer, Button as AntButton, Switch } from "antd"; // Re-introducing AntButton for the trigger and Switch for dev mode
 import { PiControl, PiJoystick } from "react-icons/pi";
 import { getN64KeyCode, isSpecialKey, analogInput } from "../controlMap"; // Added import
 
@@ -10,9 +10,14 @@ interface LocalControlsProps {
   onClickButton: (key: string) => void;
 }
 
+interface N64ControllerLayoutProps extends LocalControlsProps {
+  isDevMode: boolean;
+}
+
 // Inner component to render the actual controller layout
-const N64ControllerLayout: React.FC<LocalControlsProps> = ({
+const N64ControllerLayout: React.FC<N64ControllerLayoutProps> = ({
   onClickButton,
+  isDevMode,
 }) => {
   const handleButtonClick = (key: string) => {
     const buttonCode = getN64KeyCode(key);
@@ -71,7 +76,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
   };
 
   const mimeticButtonBase =
-    "flex items-center justify-center rounded-full cursor-pointer select-none transition-all duration-100 ease-in-out shadow-md hover:shadow-lg active:shadow-inner active:scale-95 active:brightness-90 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800";
+    "flex items-center justify-center rounded-full cursor-pointer select-none transition-all duration-100 ease-in-out shadow-md hover:shadow-lg active:shadow-inner active:scale-95 active:brightness-90 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 relative";
   const shoulderButtonColors =
     "bg-gray-500 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 text-white";
   const dPadColors =
@@ -85,6 +90,8 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
     "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white";
   const cButtonColors =
     "bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 text-black";
+  const devModeTextStyle =
+    "absolute top-0 left-1/2 -translate-x-1/2 -mt-4 text-xs font-mono bg-black bg-opacity-50 text-white px-1 rounded";
 
   return (
     <div className="flex flex-col items-center justify-center p-4 sm:p-2 rounded-xl select-none font-sans w-full max-w-2xl mx-auto overflow-hidden">
@@ -96,7 +103,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
           className={`${mimeticButtonBase} ${shoulderButtonColors} w-16 h-16 text-lg focus:ring-gray-400`}
           onClick={() => handleButtonClick("L")}
         >
-          L
+          L{isDevMode && <span className={devModeTextStyle}>L</span>}
         </div>
         <div
           role="button"
@@ -104,7 +111,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
           className={`${mimeticButtonBase} ${shoulderButtonColors} w-16 h-16 text-lg focus:ring-gray-400`}
           onClick={() => handleButtonClick("R")}
         >
-          R
+          R{isDevMode && <span className={devModeTextStyle}>R</span>}
         </div>
       </div>
 
@@ -121,6 +128,9 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               onClick={() => handleButtonClick("LEFT_STICK_Y:-1")}
             >
               ▲
+              {isDevMode && (
+                <span className={devModeTextStyle}>LEFT_STICK_Y:-1</span>
+              )}
             </div>
             <div />
             <div
@@ -129,6 +139,9 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               onClick={() => handleButtonClick("LEFT_STICK_X:-1")}
             >
               ◀
+              {isDevMode && (
+                <span className={devModeTextStyle}>LEFT_STICK_X:-1</span>
+              )}
             </div>
             <div className="w-10 h-10 rounded-full shadow-inner"> </div>{" "}
             {/* D-pad center appearance */}
@@ -138,6 +151,9 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               onClick={() => handleButtonClick("LEFT_STICK_X:+1")}
             >
               ▶
+              {isDevMode && (
+                <span className={devModeTextStyle}>LEFT_STICK_X:+1</span>
+              )}
             </div>
             <div />
             <div
@@ -146,6 +162,9 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               onClick={() => handleButtonClick("LEFT_STICK_Y:+1")}
             >
               ▼
+              {isDevMode && (
+                <span className={devModeTextStyle}>LEFT_STICK_Y:+1</span>
+              )}
             </div>
             <div />
           </div>
@@ -160,6 +179,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
             onClick={() => handleButtonClick("START")}
           >
             START
+            {isDevMode && <span className={devModeTextStyle}>START</span>}
           </div>
           <div
             role="button"
@@ -168,6 +188,9 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
             onClick={() => handleButtonClick("LEFT_BOTTOM_SHOULDER")}
           >
             Z
+            {isDevMode && (
+              <span className={devModeTextStyle}>LEFT_BOTTOM_SHOULDER</span>
+            )}
           </div>
         </div>
 
@@ -180,7 +203,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               className={`${mimeticButtonBase} ${bButtonColors} w-12 h-12 text-xl absolute top-0 left-1 focus:ring-green-400`}
               onClick={() => handleButtonClick("BUTTON_4")}
             >
-              B
+              B{isDevMode && <span className={devModeTextStyle}>BUTTON_4</span>}
             </div>
             <div
               role="button"
@@ -189,7 +212,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               style={{ backgroundColor: "#007AFF" }} // Apple Blue for A button
               onClick={() => handleButtonClick("BUTTON_2")}
             >
-              A
+              A{isDevMode && <span className={devModeTextStyle}>BUTTON_2</span>}
             </div>
           </div>
 
@@ -202,6 +225,9 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               onClick={() => handleButtonClick("RIGHT_STICK_Y:+1")}
             >
               ▲
+              {isDevMode && (
+                <span className={devModeTextStyle}>RIGHT_STICK_Y:+1</span>
+              )}
             </div>
             <div />
             <div
@@ -211,6 +237,9 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               onClick={() => handleButtonClick("RIGHT_STICK_X:-1")}
             >
               ◀
+              {isDevMode && (
+                <span className={devModeTextStyle}>RIGHT_STICK_X:-1</span>
+              )}
             </div>
             <div />
             <div
@@ -220,6 +249,9 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               onClick={() => handleButtonClick("RIGHT_STICK_X:+1")}
             >
               ▶
+              {isDevMode && (
+                <span className={devModeTextStyle}>RIGHT_STICK_X:+1</span>
+              )}
             </div>
             <div />
             <div
@@ -229,6 +261,9 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               onClick={() => handleButtonClick("LEFT_STICK_Y:-1")}
             >
               ▼
+              {isDevMode && (
+                <span className={devModeTextStyle}>LEFT_STICK_Y:-1</span>
+              )}
             </div>
             <div />
           </div>
@@ -241,6 +276,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
 // Main exported component that manages the drawer
 const N64Controller: React.FC<LocalControlsProps> = ({ onClickButton }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isDevMode, setIsDevMode] = useState(false); // State for dev mode
 
   const showDrawer = () => {
     setIsDrawerOpen(true);
@@ -248,6 +284,10 @@ const N64Controller: React.FC<LocalControlsProps> = ({ onClickButton }) => {
 
   const closeDrawer = () => {
     setIsDrawerOpen(false);
+  };
+
+  const toggleDevMode = (checked: boolean) => {
+    setIsDevMode(checked);
   };
 
   return (
@@ -258,7 +298,21 @@ const N64Controller: React.FC<LocalControlsProps> = ({ onClickButton }) => {
         </AntButton>
       </div>
       <Drawer
-        title="N64 Controls"
+        title={
+          <div className="flex justify-between items-center">
+            N64 Controls
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-normal text-gray-400 dark:text-gray-500">
+                Dev Mode
+              </span>
+              <Switch
+                size="small"
+                checked={isDevMode}
+                onChange={toggleDevMode}
+              />
+            </div>
+          </div>
+        }
         placement="bottom"
         className="overflow-hidden w-fit"
         closable={true}
@@ -274,9 +328,20 @@ const N64Controller: React.FC<LocalControlsProps> = ({ onClickButton }) => {
             width: "600px",
             backdropFilter: "blur(10px)",
           },
+          header: {
+            // Ensure header also has a similar background if needed, or adjust as per overall theme
+            backgroundColor: "#333333aa", // Or your preferred header background
+            borderBottom: "1px solid #444444", // Optional: a subtle border
+          },
+          body: {
+            padding: 0, // Remove padding if N64ControllerLayout handles it
+          },
         }}
       >
-        <N64ControllerLayout onClickButton={onClickButton} />
+        <N64ControllerLayout
+          onClickButton={onClickButton}
+          isDevMode={isDevMode}
+        />
       </Drawer>
     </>
   );
