@@ -4,32 +4,68 @@
 import React, { useState } from "react";
 import { Drawer, Button as AntButton } from "antd"; // Re-introducing AntButton for the trigger
 import { PiControl, PiJoystick } from "react-icons/pi";
-
-type N64ButtonKey =
-  | "L"
-  | "R"
-  | "Z"
-  | "START"
-  | "A"
-  | "B"
-  | "C_UP"
-  | "C_DOWN"
-  | "C_LEFT"
-  | "C_RIGHT"
-  | "DPAD_UP"
-  | "DPAD_DOWN"
-  | "DPAD_LEFT"
-  | "DPAD_RIGHT";
+import { getN64KeyCode } from "../controlMap"; // Added import
 
 interface LocalControlsProps {
-  onClickButton: (key: N64ButtonKey) => void;
+  onClickButton: (key: string) => void;
 }
 
 // Inner component to render the actual controller layout
 const N64ControllerLayout: React.FC<LocalControlsProps> = ({
   onClickButton,
 }) => {
-  const handleButtonClick = (key: N64ButtonKey) => {
+  const handleButtonClick = (key: string) => {
+    const buttonCode = getN64KeyCode(key);
+    const player = 0; // Assuming player 0 for local controls
+    const pressDuration = 100; // Duration for the button press in ms
+
+    if (buttonCode !== undefined) {
+      if (
+        (window as any).EJS_emulator &&
+        (window as any).EJS_emulator.gameManager &&
+        (window as any).EJS_emulator.gameManager.functions &&
+        typeof (window as any).EJS_emulator.gameManager.functions
+          .simulateInput === "function"
+      ) {
+        (window as any).EJS_emulator.gameManager.functions.simulateInput(
+          player,
+          buttonCode,
+          1 // Press the button
+        );
+        console.log(
+          `LocalControls: Player ${player} pressed UI button '${key}', code: ${buttonCode}.`
+        );
+
+        setTimeout(() => {
+          if (
+            (window as any).EJS_emulator &&
+            (window as any).EJS_emulator.gameManager &&
+            (window as any).EJS_emulator.gameManager.functions &&
+            typeof (window as any).EJS_emulator.gameManager.functions
+              .simulateInput === "function"
+          ) {
+            (window as any).EJS_emulator.gameManager.functions.simulateInput(
+              player,
+              buttonCode,
+              0 // Release the button
+            );
+            console.log(
+              `LocalControls: Player ${player} released UI button '${key}' ( code: ${buttonCode}) after ${pressDuration}ms.`
+            );
+          }
+        }, pressDuration);
+      } else {
+        console.warn(
+          "LocalControls: EJS_emulator.gameManager.functions.simulateInput is not available on window object or is not a function."
+        );
+      }
+    } else {
+      console.warn(
+        `LocalControls: Unknown button or mapping for UI key "${key}"`
+      );
+    }
+
+    // Call the original prop, so parent components can also react if needed
     onClickButton(key);
   };
 
@@ -58,7 +94,6 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
           tabIndex={0}
           className={`${mimeticButtonBase} ${shoulderButtonColors} w-16 h-16 text-lg focus:ring-gray-400`}
           onClick={() => handleButtonClick("L")}
-          onKeyPress={(e) => e.key === "Enter" && handleButtonClick("L")}
         >
           L
         </div>
@@ -67,7 +102,6 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
           tabIndex={0}
           className={`${mimeticButtonBase} ${shoulderButtonColors} w-16 h-16 text-lg focus:ring-gray-400`}
           onClick={() => handleButtonClick("R")}
-          onKeyPress={(e) => e.key === "Enter" && handleButtonClick("R")}
         >
           R
         </div>
@@ -83,22 +117,15 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               role="button"
               tabIndex={0}
               className={`${mimeticButtonBase} ${dPadColors} w-10 h-10 focus:ring-neutral-500`}
-              onClick={() => handleButtonClick("DPAD_UP")}
-              onKeyPress={(e) =>
-                e.key === "Enter" && handleButtonClick("DPAD_UP")
-              }
+              onClick={() => handleButtonClick("LEFT_STICK_Y:+1")}
             >
               ▲
             </div>
             <div />
             <div
               role="button"
-              tabIndex={0}
               className={`${mimeticButtonBase} ${dPadColors} w-10 h-10 focus:ring-neutral-500`}
               onClick={() => handleButtonClick("DPAD_LEFT")}
-              onKeyPress={(e) =>
-                e.key === "Enter" && handleButtonClick("DPAD_LEFT")
-              }
             >
               ◀
             </div>
@@ -106,24 +133,16 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
             {/* D-pad center appearance */}
             <div
               role="button"
-              tabIndex={0}
               className={`${mimeticButtonBase} ${dPadColors} w-10 h-10 focus:ring-neutral-500`}
               onClick={() => handleButtonClick("DPAD_RIGHT")}
-              onKeyPress={(e) =>
-                e.key === "Enter" && handleButtonClick("DPAD_RIGHT")
-              }
             >
               ▶
             </div>
             <div />
             <div
               role="button"
-              tabIndex={0}
               className={`${mimeticButtonBase} ${dPadColors} w-10 h-10 focus:ring-neutral-500`}
-              onClick={() => handleButtonClick("DPAD_DOWN")}
-              onKeyPress={(e) =>
-                e.key === "Enter" && handleButtonClick("DPAD_DOWN")
-              }
+              onClick={() => handleButtonClick("LEFT_STICK_Y:-1")}
             >
               ▼
             </div>
@@ -136,9 +155,8 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
           <div
             role="button"
             tabIndex={0}
-            className={`${mimeticButtonBase} ${startButtonColors} w-12 h-12 text-xs font-semibold focus:ring-red-400`}
+            className={`${mimeticButtonBase} ${startButtonColors} w-16 h-16 text-sm font-semibold focus:ring-red-400`}
             onClick={() => handleButtonClick("START")}
-            onKeyPress={(e) => e.key === "Enter" && handleButtonClick("START")}
           >
             START
           </div>
@@ -146,8 +164,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
             role="button"
             tabIndex={0}
             className={`${mimeticButtonBase} ${zButtonColors} w-14 h-14 text-base focus:ring-gray-400`}
-            onClick={() => handleButtonClick("Z")}
-            onKeyPress={(e) => e.key === "Enter" && handleButtonClick("Z")}
+            onClick={() => handleButtonClick("LEFT_BOTTOM_SHOULDER")}
           >
             Z
           </div>
@@ -160,8 +177,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               role="button"
               tabIndex={0}
               className={`${mimeticButtonBase} ${bButtonColors} w-12 h-12 text-xl absolute top-0 left-1 focus:ring-green-400`}
-              onClick={() => handleButtonClick("B")}
-              onKeyPress={(e) => e.key === "Enter" && handleButtonClick("B")}
+              onClick={() => handleButtonClick("BUTTON_4")}
             >
               B
             </div>
@@ -170,8 +186,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               tabIndex={0}
               className={`${mimeticButtonBase} ${aButtonColors} w-16 h-16 text-2xl absolute bottom-0 right-0 focus:ring-blue-400`}
               style={{ backgroundColor: "#007AFF" }} // Apple Blue for A button
-              onClick={() => handleButtonClick("A")}
-              onKeyPress={(e) => e.key === "Enter" && handleButtonClick("A")}
+              onClick={() => handleButtonClick("BUTTON_2")}
             >
               A
             </div>
@@ -183,8 +198,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               role="button"
               tabIndex={0}
               className={`${mimeticButtonBase} ${cButtonColors} w-10 h-10 text-sm focus:ring-yellow-400`}
-              onClick={() => handleButtonClick("C_UP")}
-              onKeyPress={(e) => e.key === "Enter" && handleButtonClick("C_UP")}
+              onClick={() => handleButtonClick("RIGHT_STICK_Y:+1")}
             >
               ▲
             </div>
@@ -193,10 +207,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               role="button"
               tabIndex={0}
               className={`${mimeticButtonBase} ${cButtonColors} w-10 h-10 text-sm focus:ring-yellow-400`}
-              onClick={() => handleButtonClick("C_LEFT")}
-              onKeyPress={(e) =>
-                e.key === "Enter" && handleButtonClick("C_LEFT")
-              }
+              onClick={() => handleButtonClick("RIGHT_STICK_X:-1")}
             >
               ◀
             </div>
@@ -205,10 +216,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               role="button"
               tabIndex={0}
               className={`${mimeticButtonBase} ${cButtonColors} w-10 h-10 text-sm focus:ring-yellow-400`}
-              onClick={() => handleButtonClick("C_RIGHT")}
-              onKeyPress={(e) =>
-                e.key === "Enter" && handleButtonClick("C_RIGHT")
-              }
+              onClick={() => handleButtonClick("RIGHT_STICK_X:+1")}
             >
               ▶
             </div>
@@ -217,10 +225,7 @@ const N64ControllerLayout: React.FC<LocalControlsProps> = ({
               role="button"
               tabIndex={0}
               className={`${mimeticButtonBase} ${cButtonColors} w-10 h-10 text-sm focus:ring-yellow-400`}
-              onClick={() => handleButtonClick("C_DOWN")}
-              onKeyPress={(e) =>
-                e.key === "Enter" && handleButtonClick("C_DOWN")
-              }
+              onClick={() => handleButtonClick("LEFT_STICK_Y:-1")}
             >
               ▼
             </div>

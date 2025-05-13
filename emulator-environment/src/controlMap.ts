@@ -1,38 +1,57 @@
 /**
  * N64 Control Map
  * 
- * This object maps human-readable N64 controller button/axis names
- * to their corresponding key codes or identifiers used by the emulator.
+ * This object maps human-readable N64 controller button/axis names,
+ * based on observed gamepad mappings, to their corresponding key codes
+ * or identifiers used potentially by an emulator or input system.
  * 
- * - A, B, START: Standard letter/symbol keys for buttons.
- * - DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT: Arrow keys for the D-Pad.
- * - L_TRIG, R_TRIG, Z_TRIG: Keyboard keys for triggers (e.g., Q, E, Tab).
- * - C_UP, C_DOWN, C_LEFT, C_RIGHT: Keys for C-buttons (e.g., K, I, J, L).
- * - LEFT_STICK_X_PLUS, LEFT_STICK_X_MINUS: Keys for positive/negative X-axis of the left analog stick (e.g., H, F).
- * - LEFT_STICK_Y_PLUS, LEFT_STICK_Y_MINUS: Keys for positive/negative Y-axis of the left analog stick (e.g., G, T).
+ * The names like 'BUTTON_2', 'DPAD_UP', 'LEFT_TOP_SHOULDER', 'LEFT_STICK_X:+1'
+ * correspond to specific inputs detected from a controller.
  * 
- * The specific key codes (like 88 for 'A', 38 for 'DPAD_UP') are examples
- * and should match the expected input codes for the target N64 emulator.
+ * The numeric values (e.g., 88, 38, 81, 72) represent the key codes
+ * associated with these inputs.
  */
 export const N64_CONTROL_MAP: { [key: string]: number } = {
-  A: 88,          // Typically 'X' key
-  B: 83,          // Typically 'S' key
-  START: 13,      // Enter key
-  DPAD_UP: 38,    // Up arrow
-  DPAD_DOWN: 40,  // Down arrow
-  DPAD_LEFT: 37,  // Left arrow
-  DPAD_RIGHT: 39, // Right arrow
-  L_TRIG: 81,     // Typically 'Q' key
-  R_TRIG: 69,     // Typically 'E' key
-  Z_TRIG: 9,      // Tab key
-  C_UP: 75,       // Typically 'K' key
-  C_DOWN: 73,     // Typically 'I' key
-  C_LEFT: 74,     // Typically 'J' key
-  C_RIGHT: 76,    // Typically 'L' key
-  LEFT_STICK_X_PLUS: 72,  // Typically 'H' for rightward stick movement
-  LEFT_STICK_X_MINUS: 70, // Typically 'F' for leftward stick movement
-  LEFT_STICK_Y_PLUS: 71,  // Typically 'G' for upward stick movement (often inverted, check emulator)
-  LEFT_STICK_Y_MINUS: 84, // Typically 'T' for downward stick movement (often inverted, check emulator)
-  // Add other less common ones if needed, e.g. BUTTON_2, BUTTON_4 directly if used
-  // These might represent other specific gamepad buttons or functions if mapped.
+  // Buttons
+  'BUTTON_2': 0,  // Corresponds to 'A' in original mapping?
+  'BUTTON_4': 1,  // Corresponds to 'B' in original mapping?
+  'START': 3,     // Enter key
+
+  // D-Pad
+  'DPAD_UP': 4,    // Up arrow
+  'DPAD_DOWN': 5,  // Down arrow
+  'DPAD_LEFT': 6,  // Left arrow
+  'DPAD_RIGHT': 7, // Right arrow
+
+  // Shoulders/Triggers
+  'LEFT_TOP_SHOULDER': 10,     // Corresponds to 'L_TRIG' in original mapping? (e.g., 'Q')
+  'RIGHT_TOP_SHOULDER': 11,    // Corresponds to 'R_TRIG' in original mapping? (e.g., 'E')
+  'LEFT_BOTTOM_SHOULDER': 12,   // Corresponds to 'Z_TRIG' in original mapping? (e.g., Tab)
+
+  // Left Stick Axes
+  'LEFT_STICK_X:+1': 16,  // Positive X-axis (e.g., 'H')
+  'LEFT_STICK_X:-1': 17, // Negative X-axis (e.g., 'F')
+  'LEFT_STICK_Y:+1': 18,  // Positive Y-axis (e.g., 'G')
+  'LEFT_STICK_Y:-1': 19, // Negative Y-axis (e.g., 'T')
+
+
+  // Right Stick (originally mapped to C-buttons)
+  'RIGHT_STICK_X:+1': 20,    // Corresponds to 'C_RIGHT' (e.g., 'L')
+  'RIGHT_STICK_X:-1': 21,    // Corresponds to 'C_LEFT' (e.g., 'J')
+  'RIGHT_STICK_Y:+1': 22,    // Corresponds to 'C_UP' (e.g., 'K')
+  'RIGHT_STICK_Y:-1': 23,    // Corresponds to 'C_DOWN' (e.g., 'I')
+
+  // Indices 24-29 from the image had values 49, 50, 51, 0, 0, 0 but no value2.
+  // These are omitted unless their corresponding control names are known.
 };
+
+/**
+ * Retrieves the N64 key code for a given control name.
+ * 
+ * @param controlName The human-readable name of the N64 control (e.g., "A", "START", "DPAD_UP").
+ * @returns The corresponding key code number, or undefined if the control name is not found.
+ */
+export const getN64KeyCode = (controlName: string): number | undefined => {
+  return N64_CONTROL_MAP[controlName];
+};
+

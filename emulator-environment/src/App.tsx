@@ -11,14 +11,14 @@ import { ConfigProvider, theme } from "antd";
 import ShowCursor from "./components/ShowCursor";
 import N64Emulator from "./environments/N64Emulator";
 import type { N64EmulatorRef } from "./environments/N64Emulator";
-// import { N64_CONTROL_MAP } from "./controlMap"; // Import the map
-import N64Controller from "./client/LocalControls";
+import N64Controller from "./components/LocalControls";
 
 import ServerLogsDisplay from "./components/ServerLogsDisplay";
 import type { ServerLogMessage } from "./types";
 
 // This is purely cosmetic, but looks charmy ;)
 import Console3D from "./components/Console3D";
+import { getN64KeyCode } from "./controlMap";
 
 // Initialize Vitrus
 const vitrus = new Vitrus({
@@ -87,7 +87,7 @@ function App() {
     if (actor) {
       actor.on("init", (config: any) => {
         console.log("Actor initialized with config:", config);
-        addLog(JSON.stringify(args));
+        addLog(JSON.stringify(config));
         return true;
       });
 
@@ -107,20 +107,71 @@ function App() {
         return screenshot;
       });
 
-      actor.on("press_button", (button: string) => {
-        console.log(button);
-        addLog(`🕹️ ${button} pressed`);
+      actor.on("press_button", (args: any) => {
+        console.log(args);
+        const player = args.player || 0;
+        const DEFAULT_HOLD_TIME = 50; // Default hold time in milliseconds
+        const holdTime =
+          typeof args.holdTime === "number" && args.holdTime > 0
+            ? args.holdTime
+            : DEFAULT_HOLD_TIME;
+
+        if (Array.isArray(args.buttons)) {
+          // Handle array of buttons
+          args.buttons.forEach((button: string) => {
+            const buttonKey = getN64KeyCode(button);
+            if (buttonKey !== undefined) {
+              (window as any).EJS_emulator.gameManager.functions.simulateInput(
+                player,
+                buttonKey,
+                1 // Press the button
+              );
+              addLog(`🕹️ ${button} pressed (batch, hold: ${holdTime}ms)`);
+              // Optional: Add a small delay or mechanism to release the button if needed
+              setTimeout(() => {
+                (
+                  window as any
+                ).EJS_emulator.gameManager.functions.simulateInput(
+                  player,
+                  buttonKey,
+                  0 // Release the button
+                );
+              }, holdTime); // Use the specified or default hold time
+            } else {
+              addLog(`⚠️ Unknown button in batch: ${button}`);
+            }
+          });
+        } else if (args.button) {
+          // Handle single button
+          const buttonKey = getN64KeyCode(args.button);
+          if (buttonKey !== undefined) {
+            (window as any).EJS_emulator.gameManager.functions.simulateInput(
+              player,
+              buttonKey,
+              1 // Press the button
+            );
+            addLog(`🕹️ ${args.button} pressed (hold: ${holdTime}ms)`);
+            // Optional: Release the button if needed, similar to above
+            setTimeout(() => {
+              (window as any).EJS_emulator.gameManager.functions.simulateInput(
+                player,
+                buttonKey,
+                0 // Release the button
+              );
+            }, holdTime); // Use the specified or default hold time
+          } else {
+            addLog(`⚠️ Unknown button: ${args.button}`);
+          }
+        } else {
+          addLog(
+            `⚠️ Invalid 'press_button' arguments: ${JSON.stringify(args)}`
+          );
+        }
 
         return true;
       });
     }
   }, [actor]);
-  /*
-.EJS_emulator.gameManager.functions.simulateInput(
-                  player,
-                  control,
-                  0
-  */
 
   return (
     <ConfigProvider theme={{ algorithm: theme.darkAlgorithm }}>
@@ -135,6 +186,7 @@ function App() {
             </div>
           )}
         </div>
+
         <ServerLogsDisplay logs={serverLogs} />
         <MemoizedEmulatorDisplay emulatorRef={emulatorRef} />
         <div className="absolute bottom-0 left-0 w-[100%] h-[30%] z-1">

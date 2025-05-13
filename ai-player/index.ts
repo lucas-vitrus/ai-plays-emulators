@@ -11,11 +11,13 @@ const vitrus = new Vitrus({
 
 const emulator = await vitrus.actor("emulator");
 
+// Simple function call
 const response = await emulator.run("log", {
   message: "Hello world!",
 });
 console.log(response);
 
+// Screenshot function call
 const screenshot = await emulator.run("screenshot");
 console.log(screenshot);
 
@@ -44,7 +46,9 @@ if (screenshot) {
   console.error("Screenshot data is not in the expected format:", screenshot);
 }
 
+
 const responseButton = await emulator.run("press_button", {
-  button: "A",
+  button: "START",
 });
+
 console.log(responseButton);
