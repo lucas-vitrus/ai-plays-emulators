@@ -1,11 +1,18 @@
-# AI plays Emulators (Nintendo 64)
+# AI plays Emulators 
+(For now only Nintendo 64)
 
+This is a ready-to-use AI environment that runs on your browser. Simply connect with 
+![50790014-e0a0-4dd0-a838-9c9cfd8bb2f9](https://github.com/user-attachments/assets/89dfbe5e-bd59-45fa-8c1b-38cd02b03b79)
+
+## Running it from Web
+[https://ai-plays-emulators.vercel.app](https://ai-plays-emulators.vercel.app/) and set your [Vitrus API key](https://app.vitrus.ai) and your world ID
+
+### Creating a player
+```ts
+bun add vitrus 
+```
+## Running it locally
 <img width="1726" alt="image" src="https://github.com/user-attachments/assets/08be59cc-37c8-4169-8b2a-a99ab1e0b570" />
-
-This project is an attempt to create an AI that can play Nintendo 64 games.
-It uses Bun for the runtime, Vite and React for the frontend, and a Bun server for the backend.
-
-## Project Structure
 
 - `emulator-environment/`: Contains the React frontend application using [EmulatorJS](https://emulatorjs.org/docs/getting-started).
 - `ai-player/`: Contains an example of an AI agent.
