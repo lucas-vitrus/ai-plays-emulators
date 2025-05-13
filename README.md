@@ -1,4 +1,4 @@
-# AI plays Emulators (Nintendo 64, PSX)
+# AI plays Emulators (Nintendo 64)
 
 <img width="1726" alt="image" src="https://github.com/user-attachments/assets/08be59cc-37c8-4169-8b2a-a99ab1e0b570" />
 
