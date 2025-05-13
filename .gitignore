@@ -138,4 +138,6 @@ dist
 #ROMS
 .z64
 .gb
+
+#ENV
 .env
