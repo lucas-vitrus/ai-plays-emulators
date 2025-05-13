@@ -3,7 +3,7 @@
 
 import React, { useState } from "react";
 import { Drawer, Button as AntButton, Switch } from "antd"; // Re-introducing AntButton for the trigger and Switch for dev mode
-import { PiGameController, PiJoystick } from "react-icons/pi";
+import { PiGameController } from "react-icons/pi";
 import { getN64KeyCode, isSpecialKey, analogInput } from "../controlMap"; // Added import
 
 interface LocalControlsProps {
