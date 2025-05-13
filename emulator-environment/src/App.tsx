@@ -26,6 +26,7 @@ const vitrus = new Vitrus({
   apiKey: import.meta.env.VITE_VITRUS_API_KEY,
   world: import.meta.env.VITE_VITRUS_WORLD, // as we are using an actor, we need to define a world for it.
   debug: true,
+  baseUrl: "ws://localhost:3333",
 });
 
 /* Emulator hot-reload Optimization */
@@ -57,7 +58,8 @@ function App() {
   useEffect(() => {
     const connectActor = async () => {
       // This will register the actor in the world
-      const actor = await vitrus.actor("n64-emulator", {});
+      const actor = await vitrus.actor("emulator", { something: "something" });
+      console.log("actor", actor);
 
       actor.on("log", (message: string) => {
         console.log(message);

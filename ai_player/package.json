@@ -24,6 +24,7 @@
     "gun": "^0.2020.1240",
     "peerjs": "^1.5.4",
     "peerjs-on-node": "^1.0.2",
+    "vitrus": "/Users/lucas-vitrus/Documents/GitHub/vitrus-sdk",
     "wrtc": "^0.4.7"
   }
 }
