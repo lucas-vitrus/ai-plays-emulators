@@ -72,5 +72,9 @@ bun add vitrus
     ```
 
     It should play now!! 🎉
+
+# Gamepad Buttons map
+<img width="598" alt="image" src="https://github.com/user-attachments/assets/9d7bfff7-49ec-416a-b295-41ee9c8cb030" />
+
     
     
